@@ -1,0 +1,29 @@
+package org.vrajpatel.userauthservice.utils.Oauth2UserInfo;
+
+
+import java.util.Map;
+
+public class GoogleUserInfo extends UserInfo {
+
+
+    public GoogleUserInfo(Map<String, Object> userInfo) {super(userInfo);}
+    @Override
+    public String getName() {
+        return this.userInfo.get("name").toString();
+    }
+
+    @Override
+    public String getEmail() {
+        return this.userInfo.get("email").toString();
+    }
+
+    @Override
+    public String getId() {
+        return this.userInfo.get("sub").toString();
+    }
+
+   @Override
+    public String getPhotoUrl(){
+        return this.userInfo.get("picture").toString();
+    }
+}
