@@ -62,13 +62,18 @@ const LoginUser = () => {
     const [oauthError, setoauthError] = React.useState<string | null>(null);
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const {isAuthenticated,message,isError}=useSelector((state:RootState)=>state.authReducer)
+    const {isAuthenticated,message,isError,jwtToken}=useSelector((state:RootState)=>state.authReducer)
+
+
+     React.useEffect(()=>{
+        if(localStorage.getItem("jwtToken")!=null || (isAuthenticated && !isError && jwtToken!==null)){
+          navigate("/home")
+        }
+      },[isAuthenticated]);
 
      React.useEffect(()=>{
         const error=queryParameter.get('error');
-        if(localStorage.getItem("jwtToken")!=null){
-          navigate("/home")
-        }
+       
         if(error){
           setModal(true)
           setoauthError(error)
@@ -77,7 +82,7 @@ const LoginUser = () => {
           setModal(true)
           setoauthError(message)
         }
-      },[queryParameter,isAuthenticated,navigate,isError,message])
+      },[queryParameter,isAuthenticated,isError,message])
     
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
       if (  emailError || passwordError) {

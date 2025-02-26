@@ -81,20 +81,26 @@ const RegisterUser = () => {
   const navigate = useNavigate();
   const {isAuthenticated,message,isError}=useSelector((state:RootState)=>state.authReducer)
 
+
   React.useEffect(()=>{
-    const error=queryParameter.get('error');
-    if(localStorage.getItem("jwtToken")!=null){
+    if(isAuthenticated && localStorage.getItem("jwtToken")!=null){
       navigate("/home")
     }
-      if(error){
-        setModal(true)
-        setError(error)
-      }
-      if(isError){
-        setModal(true)
-        setError(message)
-      }
-  },[queryParameter,isAuthenticated,navigate,isError,message])
+  },[isAuthenticated]);
+
+  React.useEffect(()=>{
+    const error=queryParameter.get('error');
+    if(error){
+      setModal(true)
+      setError(error)
+    }
+
+    // Check if we have a error in global state
+    if(isError){
+      setModal(true)
+      setError(message)
+    }
+  },[queryParameter,isAuthenticated,isError,message])
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     if ( nameError || emailError || passwordError) {

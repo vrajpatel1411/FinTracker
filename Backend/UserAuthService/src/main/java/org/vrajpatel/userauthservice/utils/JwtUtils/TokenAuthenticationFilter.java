@@ -26,12 +26,20 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private TokenProvider tokenProvider;
+
     @Autowired
     private UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try{
+            String requestURI = request.getRequestURI();
+
+            if (requestURI.startsWith("/userauthservice/api/auth/") || requestURI.startsWith("/oauth2/")) {
+
+                filterChain.doFilter(request, response); // Skip the filter
+                return;
+            }
             String jwt=getJWTFromRequest(request);
             if(StringUtils.hasText(jwt) &&  tokenProvider.validateToken(jwt)) {
                 Long userId = tokenProvider.getUserIdFromJWT(jwt);
@@ -50,7 +58,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
             else{
-                throw new org.vrajpatel.userauthservice.Exception.BadRequestException("Sorry Something wrong with the token");
+                throw new BadRequestException("Sorry Something wrong with the token");
             }
         }
         catch(Exception e){

@@ -6,7 +6,7 @@ import axios from "axios";
     "auth/loginUser",
     async (user: UserLogin) => {
         try{
-            const loginUser = await axios.post("http://localhost:8080/api/auth/login", user);
+            const loginUser = await axios.post("http://localhost:8081/userauthservice/api/auth/login", user);
             return loginUser.data;
         }
         catch(error){

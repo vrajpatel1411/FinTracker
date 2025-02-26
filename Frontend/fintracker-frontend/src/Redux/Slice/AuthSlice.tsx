@@ -2,7 +2,7 @@ import {  createSlice } from "@reduxjs/toolkit";
 import AuthState from "../../Types/AuthState";
 import loginUser  from "../Reducers/loginUser";
 import registerUser  from "../Reducers/registerUser";
-import Oauth2Success from "../Reducers/oauth2Success";
+import Oauth2Success from "../Reducers/Oauth2Success";
 
 
 const initialState: AuthState = {
@@ -23,24 +23,20 @@ export const authSlice = createSlice({
             state.isAuthenticated = false;
         })
         .addCase(registerUser.fulfilled, (state, action) => {
-            console.log(action.payload);
-
             if(action.payload?.status){
                 state.isAuthenticated = true;
             state.jwtToken = action.payload.jwtToken;
             localStorage.setItem("jwtToken", action.payload.jwtToken);
             state.message = action.payload.message;
+            state.isError = false;
             }
             else{
                 state.isAuthenticated = false;
                 state.isError = true;
                 state.message = (action.payload as { message: string }).message || "";
             }
-            
-       
         })
         .addCase(registerUser.rejected, (state, action) => {
-            console.log(action.payload);
             state.isAuthenticated = false;
             state.isError = true;
             state.message = (action.payload as { message: string }).message || "";
@@ -50,12 +46,12 @@ export const authSlice = createSlice({
             state.isAuthenticated = false;
         })
         .addCase(loginUser.fulfilled, (state, action) => {
-            console.log(action.payload);
             if(action.payload?.status || action.payload?.jwtToken!==null){
                 state.isAuthenticated = true;
-            state.jwtToken = action.payload.jwtToken;
-            localStorage.setItem("jwtToken", action.payload.jwtToken);
-            state.message = action.payload.message;
+                state.jwtToken = action.payload.jwtToken;
+                localStorage.setItem("jwtToken", action.payload.jwtToken);
+                state.message = action.payload.message;
+                state.isError = false;
             }
             else{
                 state.isAuthenticated = false;
@@ -64,7 +60,7 @@ export const authSlice = createSlice({
             }
         })
         .addCase(loginUser.rejected, (state, action) => {
-            console.log(action.payload);
+           
             state.isAuthenticated = false;
             state.isError = true;
             state.message = (action.payload as { message: string }).message || "";
@@ -73,7 +69,7 @@ export const authSlice = createSlice({
             state.isAuthenticated = false;
         })
         .addCase(Oauth2Success.fulfilled, (state, action) => {
-            console.log(action.payload);
+
            if(action.payload!=null){
             state.isAuthenticated = true;
             state.jwtToken = action.payload;

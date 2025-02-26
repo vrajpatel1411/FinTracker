@@ -12,7 +12,9 @@ import java.util.Date;
 
 @Service
 public class TokenProvider {
+
     private static final Logger logger= LoggerFactory.getLogger(TokenProvider.class);
+
     @Autowired
     private AppProperties appProperties;
 

@@ -14,6 +14,7 @@ import java.security.SignatureException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
     @ExceptionHandler(AuthenticationOauth2ProcessingException.class)
     public ResponseEntity<AuthResponse> handlerAuthenticationOauth2ProcessingException(AuthenticationOauth2ProcessingException e) {
         AuthResponse resp = new AuthResponse();

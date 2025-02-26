@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
-import Oauth2Success from '../Redux/Reducers/oauth2Success';
+import Oauth2Success from '../Redux/Reducers/Oauth2Success';
 import { useDispatch } from 'react-redux';
 
 const RedirectHandler = () => {
@@ -12,6 +12,12 @@ const RedirectHandler = () => {
     useEffect(()=>{
         const getToken=queryParameter.get('token');
         const getError=queryParameter.get('error');
+        if(token){
+            navigate("/home");
+      }
+      if(error){
+          navigate("/login?error="+error);
+      }
         if(getToken){
             setToken(getToken);   
             dispatch(Oauth2Success(getToken));
@@ -19,13 +25,10 @@ const RedirectHandler = () => {
         if(getError){
             setError(getError)
         }
-  },[queryParameter,dispatch])
-  if(token){
-        navigate("/home");
-  }
-  if(error){
-      navigate("/login?error="+error);
-  }
+
+  },[queryParameter,dispatch,token,error])
+
+  
   
   return null
 }

@@ -1,5 +1,5 @@
 const HandleOauthLogin=(provider:string)=>{
-    const baseUrl="http://localhost:8080/oauth2/authorize/";
+    const baseUrl="http://localhost:8081/oauth2/authorize/";
     const OAUTH2_REDIRECT_URI = 'http://localhost:5173/oauth2/redirect'
     switch(provider){
         case "google":
