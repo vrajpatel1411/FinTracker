@@ -12,6 +12,7 @@ import java.util.Date;
 @Data
 @Getter @Setter @NoArgsConstructor @ToString
 public class User {
+
     public Long getUserId() {
         return userId;
     }

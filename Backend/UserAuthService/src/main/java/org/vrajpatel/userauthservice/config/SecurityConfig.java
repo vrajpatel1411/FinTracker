@@ -74,7 +74,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(httpSecuritySessionManagementConfigurer -> httpSecuritySessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorizeRequests ->
-                        authorizeRequests.requestMatchers("/userauthservice/api/auth/**","/oauth2/**").permitAll()
+                        authorizeRequests.requestMatchers("/userauthservice/api/auth/**","/oauth2/**","/swagger-ui/**","/v3/**","/actuator/**").permitAll()
                                 .requestMatchers("/userauthservice/api/user/**").authenticated()
                                 .anyRequest().permitAll()
                         )
@@ -96,18 +96,4 @@ public class SecurityConfig {
 
         return http.build();
     }
-
-//    CorsConfigurationSource corsConfigurationSource() {
-//        CorsConfiguration configuration = new CorsConfiguration();
-//        configuration.setAllowedOrigins(Collections.singletonList("*"));
-//        configuration.setAllowedMethods(Collections.singletonList("*"));
-//        configuration.setAllowedHeaders(Collections.singletonList("*"));
-//        configuration.setAllowCredentials(true);
-//        configuration.setExposedHeaders(Collections.singletonList("Authorization"));
-//        configuration.setMaxAge(3600L);
-//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-//        source.registerCorsConfiguration("/**", configuration);
-//
-//        return source;
-//    }
 }
