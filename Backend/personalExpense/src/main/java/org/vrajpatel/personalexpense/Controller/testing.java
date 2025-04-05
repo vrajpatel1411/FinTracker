@@ -11,8 +11,6 @@ public class testing {
 
     @GetMapping("/")
     public String test(@RequestHeader("userEmail") String userEmail) {
-
-
         return "hello world " + userEmail;
     }
 }
