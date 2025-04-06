@@ -2,7 +2,9 @@ package org.vrajpatel.userauthservice.service;
 
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -47,11 +49,20 @@ public class AuthService {
                 Authentication authentication=new UsernamePasswordAuthenticationToken(userPrincipal,new ArrayList<>());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 String jwt= tokenProvider.createJWT(authentication);
+                ResponseCookie cookie=ResponseCookie.from("jwttoken",jwt).
+                        httpOnly(true).
+                        maxAge(3600).
+                        sameSite("None").
+                        secure(true).
+                        path("/").build();
+
                 AuthResponse authResponse=new AuthResponse();
                 authResponse.setStatus(true);
                 authResponse.setMessage("Login successful");
-                authResponse.setJwtToken(jwt);
-                return ResponseEntity.ok(authResponse);
+                System.out.println(cookie.toString());
+//                HttpHeaders httpHeaders=new HttpHeaders();
+//                httpHeaders.set(HttpHeaders.SET_COOKIE,cookie.toString());
+                return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE,cookie.toString()).body(authResponse);
             }
             else{
                 AuthResponse authResponse=new AuthResponse();
@@ -96,8 +107,16 @@ public class AuthService {
             AuthResponse authResponse=new AuthResponse();
             authResponse.setStatus(true);
             authResponse.setMessage("User Registration successful");
-            authResponse.setJwtToken(jwt);
-            return ResponseEntity.ok(authResponse);
+            ResponseCookie cookie=ResponseCookie.from("jwttoken",jwt)
+                    .httpOnly(true)
+                    .maxAge(3600)
+                    .sameSite("None")
+                    .secure(true)
+                    .path("/")
+                    .build();
+
+            return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE,cookie.toString()).body(authResponse);
+
         }
     }
 }

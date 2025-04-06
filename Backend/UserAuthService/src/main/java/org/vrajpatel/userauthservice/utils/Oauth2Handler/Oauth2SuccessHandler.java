@@ -6,6 +6,8 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
@@ -47,8 +49,22 @@ public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             return;
         }
 
-        clearAuthenticationAttributes(request);
+        String token=null;
+        if(!targetUrl.isEmpty()){
+            token= tokenProvider.createJWT(authentication);
+        }
 
+        if(token!=null){
+            ResponseCookie cookie=ResponseCookie.from("jwttoken",token).httpOnly(true).maxAge(3600).path("/").build();
+            System.out.print(cookie.toString());
+            response.addHeader(HttpHeaders.SET_COOKIE,cookie.toString());
+        }
+
+        clearAuthenticationAttributes(request);
+        UriComponentsBuilder builder = UriComponentsBuilder
+                .fromUriString(targetUrl)
+                .queryParam("success", "true");
+        targetUrl = builder.toUriString();
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
 
     }
@@ -62,12 +78,8 @@ public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         if(redirectUri.isPresent() && !isAuthorizedRedirectURI(redirectUri.get())){
             throw new BadRequestException("Sorry, We've got an unauthorized redirect URI");
         }
-
         String targetUrl=redirectUri.orElse(getDefaultTargetUrl());
-
-        String token= tokenProvider.createJWT(authentication);
-
-        return UriComponentsBuilder.fromUriString(targetUrl).queryParam("token",token).build().toUriString();
+        return UriComponentsBuilder.fromUriString(targetUrl).build().toUriString();
     }
 
     private boolean isAuthorizedRedirectURI(String uri){
