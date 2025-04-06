@@ -83,7 +83,7 @@ const RegisterUser = () => {
 
 
   React.useEffect(()=>{
-    if(isAuthenticated && localStorage.getItem("jwtToken")!=null){
+    if(isAuthenticated ){
       navigate("/home")
     }
   },[isAuthenticated]);

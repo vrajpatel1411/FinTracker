@@ -20,9 +20,9 @@ const Home = () => {
       
         const fetchData = async () => {
             const res= await axios.get("http://localhost:8081/personalexpense/",{
-                headers:{
-                    Authorization: `Bearer ${localStorage.getItem("jwtToken")}`
-                }
+              
+                withCredentials: true
+              
             })
             if(res){
               console.log(res.data)

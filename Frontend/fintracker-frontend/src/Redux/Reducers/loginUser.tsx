@@ -7,10 +7,12 @@ import axios from "axios";
     async (user: UserLogin) => {
         try{
             const loginUser = await axios.post("http://localhost:8081/userauthservice/api/auth/login", user);
+            console.log(loginUser.data);
             return loginUser.data;
         }
         catch(error){
             if(axios.isAxiosError(error) && error?.response){
+
                 return error.response.data;
             }
             else{
