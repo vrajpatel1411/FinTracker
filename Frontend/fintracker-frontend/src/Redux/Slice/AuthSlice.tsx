@@ -7,7 +7,6 @@ import Oauth2Success from "../Reducers/Oauth2Success";
 
 const initialState: AuthState = {
     isAuthenticated: false,
-    jwtToken: '',
     message: '',
     isError: false,
 }
@@ -25,8 +24,7 @@ export const authSlice = createSlice({
         .addCase(registerUser.fulfilled, (state, action) => {
             if(action.payload?.status){
                 state.isAuthenticated = true;
-            state.jwtToken = action.payload.jwtToken;
-            localStorage.setItem("jwtToken", action.payload.jwtToken);
+           
             state.message = action.payload.message;
             state.isError = false;
             }
@@ -48,8 +46,6 @@ export const authSlice = createSlice({
         .addCase(loginUser.fulfilled, (state, action) => {
             if(action.payload?.status || action.payload?.jwtToken!==null){
                 state.isAuthenticated = true;
-                state.jwtToken = action.payload.jwtToken;
-                localStorage.setItem("jwtToken", action.payload.jwtToken);
                 state.message = action.payload.message;
                 state.isError = false;
             }
@@ -70,10 +66,11 @@ export const authSlice = createSlice({
         })
         .addCase(Oauth2Success.fulfilled, (state, action) => {
 
-           if(action.payload!=null){
+           if(action.payload!=null && action.payload){
             state.isAuthenticated = true;
-            state.jwtToken = action.payload;
-            localStorage.setItem("jwtToken", action.payload);
+           }
+           else{
+            state.isAuthenticated = false;
            }
            
         })

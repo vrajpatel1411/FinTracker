@@ -62,11 +62,11 @@ const LoginUser = () => {
     const [oauthError, setoauthError] = React.useState<string | null>(null);
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const {isAuthenticated,message,isError,jwtToken}=useSelector((state:RootState)=>state.authReducer)
+    const {isAuthenticated,message,isError}=useSelector((state:RootState)=>state.authReducer)
 
 
      React.useEffect(()=>{
-        if(localStorage.getItem("jwtToken")!=null || (isAuthenticated && !isError && jwtToken!==null)){
+        if((isAuthenticated && !isError )){
           navigate("/home")
         }
       },[isAuthenticated]);
