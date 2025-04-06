@@ -56,21 +56,6 @@ public class SecurityConfig {
     public SecurityFilterChain configure(HttpSecurity http) throws Exception {
         http
                 .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-//                .cors(corsConfigurer -> corsConfigurer.configurationSource(
-//                        new CorsConfigurationSource() {
-//                            @Override
-//                            public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
-//                                CorsConfiguration cors=new CorsConfiguration();
-//                                cors.setAllowedOrigins(Collections.singletonList("http://localhost:5173"));
-//                                cors.setAllowedMethods(Collections.singletonList("*"));
-//                                cors.setAllowCredentials(true);
-//                                cors.setAllowedHeaders(Collections.singletonList("*"));
-//                                cors.setExposedHeaders(Arrays.asList("Authorization"));
-//                                cors.setMaxAge(3600L);
-//                                return cors;
-//                            }
-//                        }
-//                ))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(httpSecuritySessionManagementConfigurer -> httpSecuritySessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorizeRequests ->

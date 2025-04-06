@@ -9,29 +9,24 @@ public class AuthResponse {
 
     private String message;
 
-    private String jwtToken;
+
 
     public AuthResponse(Boolean status, String message) {
         this.status = status;
         this.message = message;
     }
 
-    public AuthResponse(String jwtToken, String message, Boolean status) {
-        this.jwtToken = jwtToken;
+    public AuthResponse( String message, Boolean status) {
+
         this.message = message;
         this.status = status;
     }
 
-    public String getJwtToken() {
-        return jwtToken;
-    }
+
 
     public AuthResponse() {
     }
 
-    public void setJwtToken(String jwtToken) {
-        this.jwtToken = jwtToken;
-    }
 
     public String getMessage() {
         return message;
