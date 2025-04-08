@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.vrajpatel.userauthservice.Exception.BadRequestException;
+import org.vrajpatel.userauthservice.Exception.CustomAuthenticationError;
 import org.vrajpatel.userauthservice.Repository.UserRepository;
 import org.vrajpatel.userauthservice.model.User;
 import org.vrajpatel.userauthservice.utils.UserPrincipal;
@@ -30,15 +32,25 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private UserRepository userRepository;
 
+    private boolean isPublicEndpoint(String requestURI) {
+        return requestURI.startsWith("/userauthservice/api/auth/") ||
+                requestURI.startsWith("/oauth2/") ||
+                requestURI.startsWith("/swagger-ui/") ||
+                requestURI.startsWith("/v3/") || requestURI.startsWith("/actuator/");
+    }
+
+
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException, AuthenticationException {
         try{
             String requestURI = request.getRequestURI();
 
-            if (requestURI.startsWith("/userauthservice/api/auth/") || requestURI.startsWith("/oauth2/")) {
-
+            if (isPublicEndpoint(requestURI)) {
                 filterChain.doFilter(request, response); // Skip the filter
                 return;
+            }
+            else{
+                System.out.println(requestURI);
             }
             String jwt=getJWTFromRequest(request);
             if(StringUtils.hasText(jwt) &&  tokenProvider.validateToken(jwt)) {
@@ -54,7 +66,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
                 }
                 else{
-                    throw new Exception("Sorry check here");
+                    throw new CustomAuthenticationError("User Not Found Using JWT Token");
                 }
             }
             else{
@@ -62,7 +74,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         catch(Exception e){
-            logger.error("Could not set user authentication in security context", e);
+//            logger.error("Could not set user authentication in security context", e);
             throw new BadRequestException(e.getMessage());
         }
 

@@ -1,23 +1,19 @@
 import axios from 'axios';
 import React, { useEffect } from 'react'
-import { RootState } from '../Redux/Store';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router';
+import { RootState } from '../Redux/Store';
+
 
 const Home = () => {
-    const {isAuthenticated}=useSelector((state:RootState)=> state.authReducer)
+    
     const [data, setData] = React.useState<string | null>(null);
-    const navigate = useNavigate();
-
-    useEffect(()=>{
-      if( localStorage.getItem("jwtToken")==null && !isAuthenticated ){
-
-        navigate("/login")
-      }
-    },[isAuthenticated,navigate])
-
+    const navigate = useNavigate()
+    const {isAuthenticated}=useSelector((state:RootState)=> state.authReducer)
     useEffect(() => {
-      
+        if(!isAuthenticated ){
+          navigate("/login")
+        }
         const fetchData = async () => {
             const res= await axios.get("http://localhost:8081/personalexpense/",{
               
