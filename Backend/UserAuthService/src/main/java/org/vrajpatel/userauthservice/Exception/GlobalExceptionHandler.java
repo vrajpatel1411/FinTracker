@@ -33,6 +33,14 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(resp, HttpStatus.UNAUTHORIZED);
     }
 
+    @ExceptionHandler(CustomAuthenticationError.class)
+    public ResponseEntity<AuthResponse> handlerCustomAuthenticationError(CustomAuthenticationError e) {
+        AuthResponse resp = new AuthResponse();
+        resp.setMessage(e.getMessage());
+        resp.setStatus(false);
+        return new ResponseEntity<>(resp, HttpStatus.UNAUTHORIZED);
+    }
+
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<AuthResponse> handlerBadRequestException(BadRequestException e) {
         AuthResponse resp = new AuthResponse();

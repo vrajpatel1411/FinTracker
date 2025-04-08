@@ -1,13 +1,12 @@
 package org.vrajpatel.userauthservice.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.vrajpatel.userauthservice.Repository.UserRepository;
 import org.vrajpatel.userauthservice.ResponseDTO.AuthResponse;
 import org.vrajpatel.userauthservice.ResponseDTO.ValidationResponseDto;
@@ -18,6 +17,7 @@ import org.vrajpatel.userauthservice.requestDTO.UserDTO;
 import org.vrajpatel.userauthservice.service.AuthService;
 import org.vrajpatel.userauthservice.utils.JwtUtils.TokenProvider;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 @RestController
@@ -42,6 +42,24 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterUserDto userDTO) {
         return authService.registerService(userDTO);
+    }
+
+    @GetMapping("/validate")
+    public ResponseEntity<ValidationResponseDto> validateUser(@CookieValue("jwttoken") String token) {
+        ValidationResponseDto response=new ValidationResponseDto();
+        if(token !=null && tokenProvider.validateToken(token)) {
+            response.setValid(true);
+            response.setMessage("success");
+            return ResponseEntity.ok(response);
+        }
+        else{
+            response.setValid(false);
+            response.setMessage("Unauthorized User or token");
+            return ResponseEntity.ok(response);
+        }
+
+
+
     }
 
     @PostMapping("/validate")

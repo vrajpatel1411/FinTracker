@@ -34,23 +34,16 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
                 .build();
     }
 
-
-
     @Autowired
     private AuthServiceRouteValidator authServiceRouteValidator;
 
     @Override
     public GatewayFilter apply(Config cfg) {
         return (exchange, chain) -> {
-//
-//            if(!exchange.getRequest().getHeaders().containsKey("jwttoken")) {
-//                return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization header not found"));
-//            }
-           System.out.print("cookie"+exchange.getRequest().getHeaders().toString());
+
             String authHeader=null;
             try {
                  authHeader = exchange.getRequest().getCookies().getFirst("jwttoken").getValue();
-                logger.info("Auth header: "+authHeader);
             }
             catch (NullPointerException e) {
                 return Mono.error(new BadException("Jwt Token not found in request header"));
@@ -58,13 +51,7 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
             if (authHeader == null || authHeader.isEmpty()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization header is empty"));
             }
-
-
-
-
                 String requestBody = String.format("{\"jwt\": \"%s\"}", authHeader);
-
-
                 return webClient.post()
                         .uri("/validate")
                         .bodyValue(requestBody)

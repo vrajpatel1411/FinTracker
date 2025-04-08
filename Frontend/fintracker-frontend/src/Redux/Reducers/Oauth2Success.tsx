@@ -2,8 +2,8 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 
 const Oauth2Success = createAsyncThunk(
     "auth/Oauth2Success",
-    async (jwtToken: string) => {
-        return jwtToken;
+    async (status: boolean) => {
+        return status;
     }    
 )
 
