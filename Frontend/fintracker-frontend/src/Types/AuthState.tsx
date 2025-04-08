@@ -1,8 +1,8 @@
 interface AuthState {
     isAuthenticated: boolean;      
-    jwtToken: string;
     message: string;
     isError: boolean;
+    isValidUser: boolean;
 }
 
 export default AuthState;
