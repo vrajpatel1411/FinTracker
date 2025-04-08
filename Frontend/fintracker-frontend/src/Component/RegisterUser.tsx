@@ -16,11 +16,13 @@ import { FacebookIcon, GithubIcon, GoogleIcon } from '../Utils/CustomIcons';
 import { IconButton} from '@mui/material';
 import HandleOauthLogin from '../Utils/HandleOauthLogin';
 import { useNavigate, useSearchParams } from 'react-router';
+
 import Modal from '../Utils/Modal';
 import User from '../Types/User';
 import registerUser  from '../Redux/Reducers/registerUser';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../Redux/Store';
+import validateUser from '../Redux/Reducers/validateUser';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -79,12 +81,20 @@ const RegisterUser = () => {
   const [error, setError] = React.useState<string | null>(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const {isAuthenticated,message,isError}=useSelector((state:RootState)=>state.authReducer)
+  const {isAuthenticated,message,isError,isValidUser}=useSelector((state:RootState)=>state.authReducer)
 
 
   React.useEffect(()=>{
     if(isAuthenticated ){
       navigate("/home")
+    }
+    else{
+      if(!isValidUser){
+        dispatch(validateUser())
+
+      }else{
+        navigate("/login")
+      }
     }
   },[isAuthenticated]);
 

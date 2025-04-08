@@ -42,24 +42,26 @@ public class AuthService {
 
 
         Optional<User> user=userRepository.findByEmail(userDTO.getEmail().toLowerCase());
-        System.out.println(user.isPresent());
+        
         if(user.isPresent()){
             if(passwordEncoder.matches(userDTO.getPassword(), user.get().getPassword())){
                 UserPrincipal userPrincipal=UserPrincipal.create(user.get());
                 Authentication authentication=new UsernamePasswordAuthenticationToken(userPrincipal,new ArrayList<>());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
                 String jwt= tokenProvider.createJWT(authentication);
-                ResponseCookie cookie=ResponseCookie.from("jwttoken",jwt).
-                        httpOnly(true).
-                        maxAge(3600).
-                        sameSite("None").
-                        secure(true).
-                        path("/").build();
+                ResponseCookie cookie=ResponseCookie.from("jwttoken",jwt)
+                        .httpOnly(true)
+                        .maxAge(3600)
+                        .sameSite("None")
+                        .domain("localhost")
+                        .secure(true)
+                        .path("/")
+                        .build();
 
                 AuthResponse authResponse=new AuthResponse();
                 authResponse.setStatus(true);
                 authResponse.setMessage("Login successful");
-                System.out.println(cookie.toString());
+
 //                HttpHeaders httpHeaders=new HttpHeaders();
 //                httpHeaders.set(HttpHeaders.SET_COOKIE,cookie.toString());
                 return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE,cookie.toString()).body(authResponse);
@@ -111,6 +113,7 @@ public class AuthService {
                     .httpOnly(true)
                     .maxAge(3600)
                     .sameSite("None")
+                    .domain("localhost")
                     .secure(true)
                     .path("/")
                     .build();

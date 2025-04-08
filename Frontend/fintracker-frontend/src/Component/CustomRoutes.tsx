@@ -4,6 +4,7 @@ import RegisterUser from './RegisterUser'
 import RedirectHandler from './RedirectHandler'
 import LoginUser from './LoginUser'
 import Home from './Home'
+import PrivateRoute from './PrivateRoute'
 
 const CustomRoutes = () => {
   return (
@@ -13,7 +14,10 @@ const CustomRoutes = () => {
             <Route path="/" element={<RedirectRoute />} />
             <Route path="/register" element={<RegisterUser />} />
             <Route path="/login" element={<LoginUser />} />
-            <Route path="/home" element={<Home />} />
+            <Route element={<PrivateRoute/>}>
+              <Route path="/home" element={<Home />} />
+              
+            </Route>
         </Routes>
     </div>
   )

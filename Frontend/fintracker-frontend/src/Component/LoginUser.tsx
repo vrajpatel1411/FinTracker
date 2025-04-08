@@ -10,6 +10,8 @@ import UserLogin from '../Types/UserLogin';
 import loginUser  from '../Redux/Reducers/loginUser';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../Redux/Store';
+
+import validateUser from '../Redux/Reducers/validateUser';
 const Card = styled(MuiCard)(({ theme }) => ({
     display: 'flex',
     flexDirection: 'column',
@@ -62,14 +64,22 @@ const LoginUser = () => {
     const [oauthError, setoauthError] = React.useState<string | null>(null);
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const {isAuthenticated,message,isError}=useSelector((state:RootState)=>state.authReducer)
+    const {isAuthenticated,message,isError,isValidUser}=useSelector((state:RootState)=>state.authReducer)
 
 
-     React.useEffect(()=>{
-        if((isAuthenticated && !isError )){
-          navigate("/home")
+    React.useEffect(()=>{
+      if(isAuthenticated ){
+        navigate("/home")
+      }
+      else{
+        if(!isValidUser){
+          dispatch(validateUser())
+
+        }else{
+          navigate("/login")
         }
-      },[isAuthenticated]);
+      }
+    },[isAuthenticated]);
 
      React.useEffect(()=>{
         const error=queryParameter.get('error');

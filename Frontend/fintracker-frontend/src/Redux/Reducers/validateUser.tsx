@@ -1,16 +1,15 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import UserLogin from "../../Types/UserLogin";
 import axios from "axios";
 
- const loginUser = createAsyncThunk(
-    "auth/loginUser",
-    async (user: UserLogin) => {
+ const validateUser = createAsyncThunk(
+    "auth/validateUser",
+    async () => {
         try{
-            const loginUser = await axios.post("http://localhost:8081/userauthservice/api/auth/login", user,{
+            const validUser = await axios.get("http://localhost:8081/userauthservice/api/auth/validate",{
                 withCredentials: true
             });
-            console.log(loginUser.data);
-            return loginUser.data;
+            console.log(validUser.data);
+            return validUser.data;
         }
         catch(error){
             if(axios.isAxiosError(error) && error?.response){
@@ -27,4 +26,4 @@ import axios from "axios";
     }
 )
 
-export default loginUser;
+export default validateUser;
