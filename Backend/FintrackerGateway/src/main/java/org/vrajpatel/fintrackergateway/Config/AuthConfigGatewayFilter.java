@@ -1,6 +1,8 @@
 package org.vrajpatel.fintrackergateway.Config;
 
 import org.apache.http.HttpHeaders;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -10,12 +12,15 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
+import org.vrajpatel.fintrackergateway.Config.Exception.BadException;
 import org.vrajpatel.fintrackergateway.Config.RoutesValidator.AuthServiceRouteValidator;
 import org.vrajpatel.fintrackergateway.ResponseDto.ValidationResponseDto;
 import reactor.core.publisher.Mono;
 
 @Component
 public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthConfigGatewayFilter.Config> {
+
+    Logger logger = LoggerFactory.getLogger(AuthConfigGatewayFilter.class);
 
     public static class Config{
 
@@ -37,18 +42,27 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
     @Override
     public GatewayFilter apply(Config cfg) {
         return (exchange, chain) -> {
-            if(!exchange.getRequest().getHeaders().containsKey("Authorization")) {
-                return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization header not found"));
+//
+//            if(!exchange.getRequest().getHeaders().containsKey("jwttoken")) {
+//                return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization header not found"));
+//            }
+           System.out.print("cookie"+exchange.getRequest().getHeaders().toString());
+            String authHeader=null;
+            try {
+                 authHeader = exchange.getRequest().getCookies().getFirst("jwttoken").getValue();
+                logger.info("Auth header: "+authHeader);
             }
-
-            String authHeader = exchange.getRequest().getHeaders().get("Authorization").get(0);
-
+            catch (NullPointerException e) {
+                return Mono.error(new BadException("Jwt Token not found in request header"));
+            }
             if (authHeader == null || authHeader.isEmpty()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization header is empty"));
             }
-            String token = authHeader.startsWith("Bearer ") ? authHeader.substring("Bearer ".length()) : authHeader;
 
-                String requestBody = String.format("{\"jwt\": \"%s\"}", token);
+
+
+
+                String requestBody = String.format("{\"jwt\": \"%s\"}", authHeader);
 
 
                 return webClient.post()
