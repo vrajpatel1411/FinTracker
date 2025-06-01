@@ -4,6 +4,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -21,11 +23,12 @@ import org.vrajpatel.userauthservice.utils.UserPrincipal;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
-
+    private static final Logger logger = LoggerFactory.getLogger(TokenAuthenticationFilter.class);
     @Autowired
     private TokenProvider tokenProvider;
 
@@ -54,8 +57,8 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             }
             String jwt=getJWTFromRequest(request);
             if(StringUtils.hasText(jwt) &&  tokenProvider.validateToken(jwt)) {
-                Long userId = tokenProvider.getUserIdFromJWT(jwt);
-                Optional<User> user=userRepository.findById(userId);
+                UUID userId = tokenProvider.getUserIdFromJWT(jwt);
+                Optional<User> user=userRepository.findByUserId(userId);
 
                 if(user.isPresent()) {
                     UserDetails userDetails = UserPrincipal.create(user.get());
@@ -74,12 +77,13 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         catch(Exception e){
-//            logger.error("Could not set user authentication in security context", e);
+            logger.error("Could not set user authentication in security context", e);
             throw new BadRequestException(e.getMessage());
         }
 
         filterChain.doFilter(request, response);
     }
+
 
     private String getJWTFromRequest(HttpServletRequest request) {
         String token=request.getHeader("Authorization");

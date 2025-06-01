@@ -55,8 +55,14 @@ public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         }
 
         if(token!=null){
-            ResponseCookie cookie=ResponseCookie.from("jwttoken",token).httpOnly(true).maxAge(3600).path("/").build();
-            System.out.print(cookie.toString());
+            ResponseCookie cookie=ResponseCookie.from("jwttoken",token) .httpOnly(true)
+                    .maxAge(3600)
+                    .sameSite("None")
+                    .domain("localhost")
+                    .secure(true)
+                    .path("/")
+                    .build();
+
             response.addHeader(HttpHeaders.SET_COOKIE,cookie.toString());
         }
 
@@ -100,7 +106,5 @@ public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                             return false;
                         }
                 );
-
-
     }
 }
