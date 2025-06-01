@@ -62,6 +62,7 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
                                 ServerHttpRequest mutatedRequest = exchange.getRequest()
                                         .mutate()
                                         .header("userEmail", response.getUserEmail())
+                                        .header("userId", response.getUserId())
                                         .build();
                                 return chain.filter(exchange.mutate().request(mutatedRequest).build());
                             } else {
