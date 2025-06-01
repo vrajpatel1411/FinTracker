@@ -9,7 +9,7 @@ import axios from "axios";
             const loginUser = await axios.post("http://localhost:8081/userauthservice/api/auth/login", user,{
                 withCredentials: true
             });
-            console.log(loginUser.data);
+       
             return loginUser.data;
         }
         catch(error){

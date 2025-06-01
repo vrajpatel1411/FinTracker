@@ -23,6 +23,7 @@ import registerUser  from '../Redux/Reducers/registerUser';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../Redux/Store';
 import validateUser from '../Redux/Reducers/validateUser';
+import { AxiosError } from 'axios';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -81,22 +82,20 @@ const RegisterUser = () => {
   const [error, setError] = React.useState<string | null>(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const {isAuthenticated,message,isError,isValidUser}=useSelector((state:RootState)=>state.authReducer)
+  const {message,isError}=useSelector((state:RootState)=>state.authReducer)
+  const hasValidatedRef = React.useRef(false);
 
+React.useEffect(() => {
+  if (hasValidatedRef.current) return;
+  hasValidatedRef.current = true;
 
-  React.useEffect(()=>{
-    if(isAuthenticated ){
-      navigate("/home")
-    }
-    else{
-      if(!isValidUser){
-        dispatch(validateUser())
-
-      }else{
-        navigate("/login")
-      }
-    }
-  },[isAuthenticated]);
+  dispatch(validateUser())
+    .unwrap()
+    .then(() => navigate("/home"))
+    .catch(() => {
+      // Stay on register page
+    });
+}, [dispatch, navigate]);
 
   React.useEffect(()=>{
     const error=queryParameter.get('error');
@@ -110,7 +109,8 @@ const RegisterUser = () => {
       setModal(true)
       setError(message)
     }
-  },[queryParameter,isAuthenticated,isError,message])
+  },[queryParameter,isError,message])
+
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     if ( nameError || emailError || passwordError) {
@@ -134,7 +134,20 @@ const RegisterUser = () => {
           password: data.get('password') as string,
         };
         console.log(user);
-        dispatch(registerUser(user));
+        dispatch(registerUser(user)).unwrap()
+    .then((res:{
+      status: boolean;
+      message: string;
+    }) => {
+     
+      if (res.status === true) {
+        navigate("/home");
+      }
+    })
+    .catch((err:AxiosError) => {
+      // Optional: handle rejected promise (network error, etc.)
+      console.error("Register failed:", err);
+    });
     }
 
   

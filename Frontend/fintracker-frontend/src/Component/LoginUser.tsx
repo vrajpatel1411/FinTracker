@@ -1,5 +1,5 @@
 import { Box, Button, CssBaseline, Divider, FormControl, FormLabel, IconButton, Link, Stack, styled, TextField, Typography } from '@mui/material';
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import { ValidateEmail, ValidatePassword } from '../Utils/ValidateInputs';
 import HandleOauthLogin from '../Utils/HandleOauthLogin';
 import { FacebookIcon, GithubIcon, GoogleIcon } from '../Utils/CustomIcons';
@@ -12,6 +12,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../Redux/Store';
 
 import validateUser from '../Redux/Reducers/validateUser';
+import {  AxiosError, } from 'axios';
 const Card = styled(MuiCard)(({ theme }) => ({
     display: 'flex',
     flexDirection: 'column',
@@ -64,22 +65,20 @@ const LoginUser = () => {
     const [oauthError, setoauthError] = React.useState<string | null>(null);
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const {isAuthenticated,message,isError,isValidUser}=useSelector((state:RootState)=>state.authReducer)
+    const {message,isError}=useSelector((state:RootState)=>state.authReducer)
+  const hasValidatedRef = useRef(false);
 
+useEffect(() => {
+    if (hasValidatedRef.current) return;
+    hasValidatedRef.current = true;
 
-    React.useEffect(()=>{
-      if(isAuthenticated ){
-        navigate("/home")
-      }
-      else{
-        if(!isValidUser){
-          dispatch(validateUser())
-
-        }else{
-          navigate("/login")
-        }
-      }
-    },[isAuthenticated]);
+    dispatch(validateUser())
+      .unwrap()
+      .then(() => navigate("/home"))
+      .catch(() => {
+        // do nothing — stay on login
+      });
+  }, [dispatch, navigate]);
 
      React.useEffect(()=>{
         const error=queryParameter.get('error');
@@ -88,15 +87,16 @@ const LoginUser = () => {
           setModal(true)
           setoauthError(error)
         }
-        if(isError){
+        else if(isError && message){
           setModal(true)
           setoauthError(message)
         }
-      },[queryParameter,isAuthenticated,isError,message])
+      },[queryParameter, isError,message])
     
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
       if (  emailError || passwordError) {
-        event.preventDefault();
+        
         return;
       }
       const data = new FormData(event.currentTarget);
@@ -105,10 +105,26 @@ const LoginUser = () => {
               email: data.get('email') as string,
               password: data.get('password') as string,
             };
-      console.log(user);
-      dispatch(loginUser(user));
-      event.preventDefault();
+      dispatch(loginUser(user))
+    .unwrap()
+    .then((res:{
+      status: boolean;
+      message: string;
+    }) => {
+     
+      if (res.status === true) {
+        navigate("/home");
+      } else {
+        // optional: show error modal if needed
+      }
+    })
+    .catch((err:AxiosError) => {
+      // Optional: handle rejected promise (network error, etc.)
+      console.error("Login failed:", err);
+    });
+      
     };
+
     return (
       <div className='relative'>
         {
