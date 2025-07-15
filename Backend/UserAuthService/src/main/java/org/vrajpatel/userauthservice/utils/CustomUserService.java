@@ -45,6 +45,7 @@ public class CustomUserService extends DefaultOAuth2UserService {
     }
 
     private OAuth2User processOauth2User(OAuth2UserRequest userRequest, OAuth2User oAuth2User) throws AuthenticationOauth2ProcessingException {
+
         UserInfo userInfo= OAuth2UserInfoFactory.getUserInfo(userRequest.getClientRegistration().getRegistrationId(),oAuth2User.getAttributes());
         if(StringUtils.isEmpty(userInfo.getEmail())){
             throw new AuthenticationOauth2ProcessingException("Email not found from the Oauth2 Provider");
@@ -70,9 +71,11 @@ public class CustomUserService extends DefaultOAuth2UserService {
     public User registerNewUser(OAuth2UserRequest oAuth2UserRequest, UserInfo userInfo) {
         User user = new User();
 
+
         user.setAuthProvider(AuthProvider.valueOf(oAuth2UserRequest.getClientRegistration().getRegistrationId()));
         user.setProviderId(userInfo.getId());
         user.setFirstName(userInfo.getName());
+
         user.setEmail(userInfo.getEmail().toLowerCase());
         user.setPhotoUrl(userInfo.getPhotoUrl());
         user.setCreatedAt(new Date());
@@ -81,6 +84,7 @@ public class CustomUserService extends DefaultOAuth2UserService {
 
     @Transactional
     public User updateExistingUser(User existingUser, UserInfo userInfo) {
+
         existingUser.setFirstName(userInfo.getName());
         return userRepository.save(existingUser);
     }

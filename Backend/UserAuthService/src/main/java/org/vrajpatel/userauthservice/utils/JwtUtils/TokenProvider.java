@@ -9,6 +9,7 @@ import org.vrajpatel.userauthservice.utils.UserPrincipal;
 import org.vrajpatel.userauthservice.utils.config.AppProperties;
 import io.jsonwebtoken.*;
 import java.util.Date;
+import java.util.UUID;
 
 @Service
 public class TokenProvider {
@@ -28,13 +29,13 @@ public class TokenProvider {
         Date now = new Date();
         Date expiryDate=new Date(now.getTime() + appProperties.getAuth().getTokenExpirationMsec());
 
-        return Jwts.builder().setSubject(String.valueOf(userPrincipal.getId())).claim("id",userPrincipal.getId()).setIssuedAt(now).setExpiration(expiryDate).signWith(SignatureAlgorithm.HS512,appProperties.getAuth().getTokenSecret()).compact();
+        return Jwts.builder().setSubject(userPrincipal.getId().toString()).claim("id",userPrincipal.getId().toString()).setIssuedAt(now).setExpiration(expiryDate).signWith(SignatureAlgorithm.HS512,appProperties.getAuth().getTokenSecret()).compact();
     }
 
-    public long getUserIdFromJWT(String jwt) {
+    public UUID getUserIdFromJWT(String jwt) {
         Claims claims=Jwts.parserBuilder().setSigningKey(appProperties.getAuth().getTokenSecret()).build().parseClaimsJws(jwt).getBody();
 
-        return Long.parseLong(claims.getSubject());
+        return UUID.fromString(claims.getSubject());
     }
 
     public boolean validateToken(String authToken){

@@ -11,6 +11,7 @@ public class FacebookUserInfo extends UserInfo {
         return this.userInfo.get("name").toString();
     }
 
+
     @Override
     public String getEmail() {
         return this.userInfo.get("email").toString();

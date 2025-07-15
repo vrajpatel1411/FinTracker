@@ -6,6 +6,7 @@ import lombok.*;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.Date;
+import java.util.UUID;
 
 @Entity
 @Table(name="users")
@@ -13,11 +14,11 @@ import java.util.Date;
 @Getter @Setter @NoArgsConstructor @ToString
 public class User {
 
-    public Long getUserId() {
+    public UUID getUserId() {
         return userId;
     }
 
-    public void setUserId(Long userId) {
+    public void setUserId(UUID userId) {
         this.userId = userId;
     }
 
@@ -37,13 +38,7 @@ public class User {
         this.password = password;
     }
 
-    public String getLastName() {
-        return lastName;
-    }
 
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
 
     public String getFirstName() {
         return firstName;
@@ -73,26 +68,6 @@ public class User {
         return authProvider;
     }
 
-    public void setAuthProvider(AuthProvider authProvider) {
-        this.authProvider = authProvider;
-    }
-
-    @Id
-    @GeneratedValue(strategy= GenerationType.SEQUENCE,generator = "user_seq_generator")
-    @SequenceGenerator(
-            name="user_seq_generator",
-            sequenceName = "user_sequence",
-            allocationSize = 1
-    )
-    private Long userId;
-
-    @NotNull
-    @Column(name = "firstname")
-    private String firstName;
-
-
-    private String photoUrl;
-
     public String getPhotoUrl() {
         return photoUrl;
     }
@@ -101,22 +76,25 @@ public class User {
         this.photoUrl = photoUrl;
     }
 
-    @Override
-    public String toString() {
-        return "User{" +
-                "authProvider=" + authProvider +
-                ", userId=" + userId +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
-                ", providerId='" + providerId + '\'' +
-                ", createdAt=" + createdAt +
-                '}';
+    public void setAuthProvider(AuthProvider authProvider) {
+        this.authProvider = authProvider;
     }
 
-    @Column
-    private String lastName;
+
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(columnDefinition = "uuid", nullable = false, unique = true)
+    private UUID userId;
+
+    @NotNull
+    @Column(name = "first_name")
+    private String firstName;
+
+
+
+    @Column(name="avatar_url")
+    private String photoUrl;
 
     @NotNull
     @Column
