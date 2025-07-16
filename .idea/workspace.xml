@@ -11,6 +11,7 @@
       <change afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Service/PersonalExpenseService.java" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/model/CategoriesModel.java" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/model/PersonalExpenseModel.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-auth" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-auth/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/pom.xml" afterDir="false" />
@@ -90,7 +91,7 @@
       <workItem from="1752698895729" duration="204000" />
       <workItem from="1752699123930" duration="15000" />
       <workItem from="1752699157597" duration="2419000" />
-      <workItem from="1752703215943" duration="1060000" />
+      <workItem from="1752703215943" duration="2052000" />
     </task>
     <servers />
   </component>
