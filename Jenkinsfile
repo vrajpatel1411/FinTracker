@@ -1,6 +1,8 @@
 pipeline {
     /* insert Declarative Pipeline here */
-    agent any
+    agent {
+      label 'linux'
+    }
 
     tools {
       git 'Default'
