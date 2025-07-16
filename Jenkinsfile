@@ -11,22 +11,28 @@ pipeline {
     stages {
 
         stage("clean gateway service"){
+            steps{
              dir("${env.workspace}/Backend/FintrackerGateway"){
                 sh "mvn clean"
              }
+             }
         }
         stage(" Package gateway service"){
+        steps{
             dir("${env.workspace}/Backend/FintrackerGateway"){
                 sh "mvn package -DskipTests"
             }
+            }
         }
         stage("Build Docker Image"){
+            steps{
             dir("${env.workspace}/Backend/FintrackerGateway"){
                 sh "docker build -t fintrackerGateway:latest ."
             }
+            }
         }
         stage("Push Docker Image to Google Cloud Registry"){
-            dir("${env.workspace}/Backend/FintrackerGateway"){
+            steps{dir("${env.workspace}/Backend/FintrackerGateway"){
                  withCredentials([file(credentialsId: 'GCP_SERVICE_ACCOUNT_KEY', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                            sh """
                                           gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
@@ -37,6 +43,7 @@ pipeline {
                                           docker push us-central1-docker.pkg.dev/fintracker-466022/fintracker/Gateway/fintrackerGateway:latest
                                       """
                         }
+            }
             }
         }
 
