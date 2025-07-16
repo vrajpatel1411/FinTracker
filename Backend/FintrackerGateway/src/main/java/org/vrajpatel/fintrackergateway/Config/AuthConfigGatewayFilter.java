@@ -30,7 +30,7 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
 
     public AuthConfigGatewayFilter() {
         super(Config.class);
-        this.webClient = WebClient.builder().baseUrl("http://localhost:8080/userauthservice/api/auth").defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+        this.webClient = WebClient.builder().baseUrl("http://localhost:8084/userauthservice/api/auth").defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }
 
