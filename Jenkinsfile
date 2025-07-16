@@ -27,7 +27,7 @@ pipeline {
         stage("Build Docker Image"){
             steps{
             dir("${env.workspace}/Backend/FintrackerGateway"){
-                sh "docker build -t fintrackerGateway:latest ."
+                sh "docker build -t fintrackergateway:latest ."
             }
             }
         }
@@ -39,7 +39,7 @@ pipeline {
                                           gcloud config set project fintracker-466022
                                           gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
-                                          docker tag fintrackerGateway:latest us-central1-docker.pkg.dev/fintracker-466022/fintracker/Gateway/fintrackerGateway:latest
+                                          docker tag fintrackergateway:latest us-central1-docker.pkg.dev/fintracker-466022/fintracker/Gateway/fintrackerGateway:latest
                                           docker push us-central1-docker.pkg.dev/fintracker-466022/fintracker/Gateway/fintrackerGateway:latest
                                       """
                         }
