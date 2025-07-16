@@ -2,5 +2,9 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/FinTracker-auth" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/FinTracker-expense" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/FinTracker-frontend" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/FinTracker-gateway" vcs="Git" />
   </component>
 </project>
