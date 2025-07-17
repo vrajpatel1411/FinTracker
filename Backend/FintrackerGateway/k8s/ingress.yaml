@@ -9,7 +9,6 @@ metadata:
     kubernetes.io/ingress.class: "gce"
     networking.gke.io/managed-certificates: fintracker-backend-cert
 spec:
-  ingressClassName: nginx
   rules:
     - host: "fintracker.vrajpatelproject.software"
       http:
