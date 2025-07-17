@@ -30,7 +30,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/userauthservice/api/auth")
+@RequestMapping("/userauth/api/auth")
 public class AuthController {
 
     @Autowired
