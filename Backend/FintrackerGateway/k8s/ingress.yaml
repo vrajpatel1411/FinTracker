@@ -6,6 +6,7 @@ metadata:
   annotations:
     kubernetes.io/ingress.global-static-ip-name: fintracker-backend-ip
     nginx.ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: "gce"
     networking.gke.io/managed-certificates: fintracker-backend-cert
 spec:
   ingressClassName: nginx

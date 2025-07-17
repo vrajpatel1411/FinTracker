@@ -11,7 +11,7 @@
       <change afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Service/PersonalExpenseService.java" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/model/CategoriesModel.java" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/model/PersonalExpenseModel.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/FintrackerGateway/k8s/ingress.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/FintrackerGateway/k8s/ingress.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-auth" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-auth/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/pom.xml" afterDir="false" />
@@ -25,8 +25,8 @@
       <change beforePath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Controller/testing.java" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Controller/testing.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-frontend" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-frontend" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-frontend/Frontend/fintracker-frontend/src/Utils/HandleOauthLogin.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-frontend/Frontend/fintracker-frontend/src/Utils/HandleOauthLogin.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FinTracker-gateway" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-gateway" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-gateway/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-gateway/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Jenkinsfile" beforeDir="false" afterPath="$PROJECT_DIR$/Jenkinsfile" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -98,7 +98,7 @@
       <workItem from="1752699157597" duration="2419000" />
       <workItem from="1752703215943" duration="2184000" />
       <workItem from="1752719291003" duration="2270000" />
-      <workItem from="1752761356730" duration="1621000" />
+      <workItem from="1752761356730" duration="2054000" />
     </task>
     <servers />
   </component>
