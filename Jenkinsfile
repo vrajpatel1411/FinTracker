@@ -137,5 +137,46 @@ pipeline {
                 }
             }
         }
+        stage("Build Frontend Docker Image") {
+                    steps {
+                        dir("${env.workspace}/Frontend/fintracker-frontend") {
+                            sh 'docker build -t fintrackerfrontend:latest .'
+                        }
+                    }
+        }
+        stage("Push frontend Docker Image to GCR") {
+                    steps {
+                        dir("${env.workspace}/Frontend/fintracker-frontend") {
+                            withCredentials([file(credentialsId: 'GCP_SERVICE_ACCOUNT_KEY', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                                sh """
+                                    gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+                                    gcloud config set project $PROJECT_ID
+                                    gcloud auth configure-docker $REGION-docker.pkg.dev --quiet
+
+                                    docker tag fintrackerfrontend:latest $REGISTRY/frontend/fintrackerfrontend:latest
+                                    docker push $REGISTRY/frontend/fintrackerfrontend:latest
+                                """
+                            }
+                        }
+                    }
+         }
+         stage("Deploy frontend to GKE") {
+                     steps {
+                         dir("${env.workspace}/frontend/fintracker-frontend") {
+                             withCredentials([file(credentialsId: 'GCP_SERVICE_ACCOUNT_KEY', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                                 sh """
+                                     gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+                                     gcloud config set project $PROJECT_ID
+                                     gcloud container clusters get-credentials $CLUSTER --region $REGION
+
+                                     kubectl apply -f k8s/managed-cert.yaml
+                                     kubectl apply -f k8s/Deployment.yaml
+                                     kubectl apply -f k8s/service.yaml
+                                     kubectl apply -f k8s/ingress.yaml
+                                 """
+                             }
+                         }
+                     }
+                 }
     }
 }

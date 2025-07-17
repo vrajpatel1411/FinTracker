@@ -19,13 +19,7 @@
       <change beforePath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Controller/testing.java" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Controller/testing.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-frontend" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-frontend" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-frontend/Frontend/fintracker-frontend/src/Utils/HandleOauthLogin.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-frontend/Frontend/fintracker-frontend/src/Utils/HandleOauthLogin.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-gateway" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-gateway" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-gateway/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-gateway/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-gateway/Backend/FintrackerGateway/src/main/java/org/vrajpatel/fintrackergateway/Config/AuthConfigGatewayFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-gateway/Backend/FintrackerGateway/src/main/java/org/vrajpatel/fintrackergateway/Config/AuthConfigGatewayFilter.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Frontend/fintracker-frontend/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/Frontend/fintracker-frontend/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Frontend/fintracker-frontend/src/Redux/Reducers/loginUser.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/Frontend/fintracker-frontend/src/Redux/Reducers/loginUser.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Frontend/fintracker-frontend/src/Redux/Reducers/registerUser.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/Frontend/fintracker-frontend/src/Redux/Reducers/registerUser.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Frontend/fintracker-frontend/src/Redux/Reducers/validateUser.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/Frontend/fintracker-frontend/src/Redux/Reducers/validateUser.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Jenkinsfile" beforeDir="false" afterPath="$PROJECT_DIR$/Jenkinsfile" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -98,7 +92,7 @@
       <workItem from="1752699157597" duration="2419000" />
       <workItem from="1752703215943" duration="2184000" />
       <workItem from="1752719291003" duration="2270000" />
-      <workItem from="1752761356730" duration="7521000" />
+      <workItem from="1752761356730" duration="8229000" />
     </task>
     <servers />
   </component>
