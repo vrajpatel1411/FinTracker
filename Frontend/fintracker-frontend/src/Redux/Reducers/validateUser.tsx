@@ -5,7 +5,7 @@ import axios from "axios";
   "auth/validateUser",
   async (_, thunkAPI) => {
     try {
-      const response = await axios.get("http://localhost:8081/userauthservice/api/auth/validate", {
+      const response = await axios.get(import.meta.env.VITE_VALIDATE_URL, {
         withCredentials: true,
       });
 

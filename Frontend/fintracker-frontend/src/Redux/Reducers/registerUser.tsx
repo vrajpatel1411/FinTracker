@@ -6,7 +6,7 @@ import axios from "axios";
     "auth/registerUser",
     async (user: User) => {
         try{
-            const registerUser = await axios.post("http://localhost:8081/userauthservice/api/auth/register", user,{
+            const registerUser = await axios.post(import.meta.env.VITE_REGISTER_URL, user,{
                 withCredentials: true
             });
             return registerUser.data;

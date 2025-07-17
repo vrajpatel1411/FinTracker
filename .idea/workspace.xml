@@ -5,23 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f6e128c8-57ca-4b9b-9a98-cf2feabc71c4" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/Backend/FintrackerGateway/k8s/backend.yaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/Dockerfile" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Repository/CategoryRepository.java" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Repository/PersonalExpenseRepository.java" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Service/PersonalExpenseService.java" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/model/CategoriesModel.java" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/model/PersonalExpenseModel.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/FintrackerGateway/k8s/ingress.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/FintrackerGateway/k8s/ingress.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/FintrackerGateway/k8s/service.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/FintrackerGateway/k8s/service.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-auth" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-auth/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/java/org/vrajpatel/userauthservice/controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/java/org/vrajpatel/userauthservice/controller/AuthController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/resources/application-dev.properties" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/resources/application-dev.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/resources/application-prod.properties" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/resources/application-prod.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/resources/application.properties" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-expense" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-expense" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-expense/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-expense/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/pom.xml" afterDir="false" />
@@ -30,6 +21,11 @@
       <change beforePath="$PROJECT_DIR$/FinTracker-frontend/Frontend/fintracker-frontend/src/Utils/HandleOauthLogin.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-frontend/Frontend/fintracker-frontend/src/Utils/HandleOauthLogin.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-gateway" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-gateway" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-gateway/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-gateway/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FinTracker-gateway/Backend/FintrackerGateway/src/main/java/org/vrajpatel/fintrackergateway/Config/AuthConfigGatewayFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-gateway/Backend/FintrackerGateway/src/main/java/org/vrajpatel/fintrackergateway/Config/AuthConfigGatewayFilter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Frontend/fintracker-frontend/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/Frontend/fintracker-frontend/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Frontend/fintracker-frontend/src/Redux/Reducers/loginUser.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/Frontend/fintracker-frontend/src/Redux/Reducers/loginUser.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Frontend/fintracker-frontend/src/Redux/Reducers/registerUser.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/Frontend/fintracker-frontend/src/Redux/Reducers/registerUser.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Frontend/fintracker-frontend/src/Redux/Reducers/validateUser.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/Frontend/fintracker-frontend/src/Redux/Reducers/validateUser.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Jenkinsfile" beforeDir="false" afterPath="$PROJECT_DIR$/Jenkinsfile" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -102,7 +98,7 @@
       <workItem from="1752699157597" duration="2419000" />
       <workItem from="1752703215943" duration="2184000" />
       <workItem from="1752719291003" duration="2270000" />
-      <workItem from="1752761356730" duration="4688000" />
+      <workItem from="1752761356730" duration="7521000" />
     </task>
     <servers />
   </component>
