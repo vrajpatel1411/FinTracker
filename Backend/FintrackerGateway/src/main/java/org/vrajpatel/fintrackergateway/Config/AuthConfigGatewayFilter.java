@@ -4,6 +4,7 @@ import org.apache.http.HttpHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpStatus;
@@ -27,10 +28,12 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
     }
     private WebClient webClient;
 
+    @Value("validationUrl")
+    private String validationUrl;
 
     public AuthConfigGatewayFilter() {
         super(Config.class);
-        this.webClient = WebClient.builder().baseUrl("http://localhost:8084/userauthservice/api/auth").defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+        this.webClient = WebClient.builder().baseUrl(validationUrl).defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }
 
