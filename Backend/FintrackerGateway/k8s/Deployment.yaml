@@ -7,16 +7,16 @@ metadata:
     type: gateway
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      type: gatewaypod
   template:
     metadata:
       labels:
         type: gatewaypod
     spec:
-      - containers:
-          - name: gatewayimage
-            image: us-central1-docker.pkg.dev/fintracker-466022/fintracker/gateway/fintrackergateway:latest
-            ports:
-              - containerPort: 8080
-  selector:
-    matchLabels:
-      type: gatewaypod
+      containers:
+        - name: gatewayimage
+          image: us-central1-docker.pkg.dev/fintracker-466022/fintracker/gateway/fintrackergateway:latest
+          ports:
+            - containerPort: 8080
