@@ -49,6 +49,23 @@
                     }
                 }
 
+                stage("Deploying the Docker Image to kubernetes"){
+                    steps{dir("${env.workspace}/Backend/FintrackerGateway"){
+                                         withCredentials([file(credentialsId: 'GCP_SERVICE_ACCOUNT_KEY', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                                                   sh """
+                                                                  gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+                                                                  gcloud config set project fintracker-466022
+                                                                   gcloud container clusters get-credentials fintracker-cluster --region us-central1 --project fintracker-466022
+
+                                                                   kubectl apply -f "k8s/Deployment.yaml"
+                                                                   kubectl apply -f "k8s/service.yaml"
+                                                              """
+                                                }
+                                    }
+                                    }
+
+                }
+
 
             }
 

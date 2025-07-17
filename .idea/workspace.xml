@@ -15,15 +15,16 @@
       <change beforePath="$PROJECT_DIR$/FinTracker-auth" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-auth/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/java/org/vrajpatel/userauthservice/controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/java/org/vrajpatel/userauthservice/controller/AuthController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/resources/application-dev.properties" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/resources/application-dev.properties" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/resources/application-prod.properties" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/resources/application-prod.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/resources/application.properties" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-expense" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-expense" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-expense/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-expense/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/pom.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Controller/testing.java" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Controller/testing.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-frontend" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-frontend" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-frontend/Frontend/fintracker-frontend/src/Utils/HandleOauthLogin.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-frontend/Frontend/fintracker-frontend/src/Utils/HandleOauthLogin.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-gateway" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-gateway" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/FinTracker-gateway/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-gateway/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Jenkinsfile" beforeDir="false" afterPath="$PROJECT_DIR$/Jenkinsfile" afterDir="false" />
     </list>
@@ -47,6 +48,10 @@
     &quot;accountId&quot;: &quot;f7c92927-3648-4efd-b1a4-c390a6f311a0&quot;
   }
 }</component>
+  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
+  <component name="KubernetesApiProvider"><![CDATA[{
+  "isMigrated": true
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 3
 }</component>
@@ -91,7 +96,8 @@
       <workItem from="1752698895729" duration="204000" />
       <workItem from="1752699123930" duration="15000" />
       <workItem from="1752699157597" duration="2419000" />
-      <workItem from="1752703215943" duration="2052000" />
+      <workItem from="1752703215943" duration="2184000" />
+      <workItem from="1752719291003" duration="1227000" />
     </task>
     <servers />
   </component>
