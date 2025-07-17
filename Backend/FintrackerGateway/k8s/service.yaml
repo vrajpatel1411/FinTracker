@@ -6,6 +6,8 @@ metadata:
   labels:
     env: "prod"
     type: "gateway"
+  annotations:
+    beta.cloud.google.com/backend-config: '{"default": "gateway-backend-config"}'
 spec:
   ports:
     - protocol: "TCP"
