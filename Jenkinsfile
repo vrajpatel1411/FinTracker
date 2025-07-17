@@ -59,6 +59,9 @@
 
                                                                    kubectl apply -f "k8s/Deployment.yaml"
                                                                    kubectl apply -f "k8s/service.yaml"
+                                                                   kubectl apply -f "k8s/managed-cert.yaml"
+                                                                   kubectl apply -f "k8s/ingress.yaml"
+
                                                               """
                                                 }
                                     }
