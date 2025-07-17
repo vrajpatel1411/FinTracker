@@ -3,6 +3,7 @@ package org.vrajpatel.userauthservice.service;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.InternalServerErrorException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -40,6 +41,9 @@ public class AuthService {
     @Autowired
     private TokenProvider tokenProvider;
 
+    @Value("${domain}")
+    private String domain;
+
     @Autowired
     private PasswordEncoder passwordEncoder;
 
@@ -57,7 +61,7 @@ public class AuthService {
                             .httpOnly(true)
                             .maxAge(3600)
                             .sameSite("None")
-                            .domain("localhost")
+                            .domain(domain)
                             .secure(true)
                             .path("/")
                             .build();
@@ -109,7 +113,7 @@ public class AuthService {
                         .httpOnly(true)
                         .maxAge(3600)
                         .sameSite("None")
-                        .domain("localhost")
+                        .domain("vrajpatelproject.software")
                         .secure(true)
                         .path("/")
                         .build();
