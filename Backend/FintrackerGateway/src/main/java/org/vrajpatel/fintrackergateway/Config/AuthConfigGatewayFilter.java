@@ -28,7 +28,7 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
     }
     private WebClient webClient;
 
-    @Value("validationUrl")
+    @Value("${validationUrl}")
     private String validationUrl;
 
     public AuthConfigGatewayFilter() {
