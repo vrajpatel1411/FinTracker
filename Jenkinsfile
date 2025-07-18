@@ -162,7 +162,7 @@ pipeline {
          }
          stage("Deploy frontend to GKE") {
                      steps {
-                         dir("${env.workspace}/frontend/fintracker-frontend") {
+                         dir("${env.workspace}/Frontend/fintracker-frontend") {
                              withCredentials([file(credentialsId: 'GCP_SERVICE_ACCOUNT_KEY', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                                  sh """
                                      gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
