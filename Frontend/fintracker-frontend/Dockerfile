@@ -3,16 +3,17 @@ FROM node:20.19-alpine AS build
 
 WORKDIR /app
 
+# Install dependencies
 COPY package*.json ./
 RUN npm install
 
+# Copy the rest of the app
 COPY . .
 
-# Use production .env file
-ENV NODE_ENV=production
+# Run build in default (development) mode so devDependencies are available
 RUN npm run build
 
-# Serve with a lightweight server
+# Serve with NGINX
 FROM nginx:stable-alpine AS production
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80
