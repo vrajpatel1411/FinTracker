@@ -21,3 +21,15 @@ spec:
           image: us-central1-docker.pkg.dev/fintracker-466022/fintracker/frontend/fintrackerfrontend:latest
           ports:
             - containerPort: 80
+      readinessProbe:
+        httpGet:
+          path: /healthz
+          port: 80
+        initialDelaySeconds: 5
+        periodSeconds: 10
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: 80
+        initialDelaySeconds: 15
+        periodSeconds: 20
