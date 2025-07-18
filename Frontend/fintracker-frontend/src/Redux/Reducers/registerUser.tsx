@@ -2,6 +2,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import User from "../../Types/User";
 import axios from "axios";
 
+
  const registerUser = createAsyncThunk(
     "auth/registerUser",
     async (user: User) => {

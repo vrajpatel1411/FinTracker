@@ -8,11 +8,12 @@ import { useNavigate, useSearchParams } from 'react-router';
 import Modal from '../Utils/Modal';
 import UserLogin from '../Types/UserLogin';
 import loginUser  from '../Redux/Reducers/loginUser';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '../Redux/Store';
 
 import validateUser from '../Redux/Reducers/validateUser';
 import {  AxiosError, } from 'axios';
+import { useAppDispatch } from '../Redux/hooks';
 const Card = styled(MuiCard)(({ theme }) => ({
     display: 'flex',
     flexDirection: 'column',
@@ -63,7 +64,7 @@ const LoginUser = () => {
     const [queryParameter]=useSearchParams()
     const [modal, setModal] = React.useState(false);
     const [oauthError, setoauthError] = React.useState<string | null>(null);
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const {message,isError}=useSelector((state:RootState)=>state.authReducer)
   const hasValidatedRef = useRef(false);

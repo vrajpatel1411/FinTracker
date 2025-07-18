@@ -1,16 +1,17 @@
 import axios, { AxiosResponse } from 'axios';
 import React, { useEffect } from 'react'
-import { useDispatch, } from 'react-redux';
+// import { useDispatch, } from 'react-redux';
 import { useNavigate } from 'react-router';
 
 import validateUser from '../Redux/Reducers/validateUser';
+import { useAppDispatch } from '../Redux/hooks';
 
 
 const Home = () => {
     
     const [data, setData] = React.useState<string | null>(null);
     const navigate = useNavigate()
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
   const hasValidatedRef = React.useRef(false);
 
 useEffect(() => {
