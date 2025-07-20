@@ -48,13 +48,13 @@ pipeline {
                         docker build -t $REGISTRY/gateway/fintrackergateway:$COMMIT_SHA .
                         docker push $REGISTRY/gateway/fintrackergateway:$COMMIT_SHA
 
-                        kubectl apply -f k8s/Deployment.yaml
+                        sed "s|image:.*|image: $REGISTRY/gateway/fintrackergateway:$COMMIT_SHA|" k8s/Deployment.yaml > k8s/Deployment-patched.yaml
+
                         kubectl apply -f k8s/service.yaml
                         kubectl apply -f k8s/managed-cert.yaml
                         kubectl apply -f k8s/ingress.yaml
                         kubectl apply -f k8s/backend.yaml
-
-                        kubectl rollout restart deployment gatewaydeployment -n fintracker
+                        kubectl apply -f k8s/Deployment-patched.yaml
                     '''
                 }
             }
@@ -71,11 +71,11 @@ pipeline {
                         docker build -t $REGISTRY/userauthentication/userauthentication:$COMMIT_SHA .
                         docker push $REGISTRY/userauthentication/userauthentication:$COMMIT_SHA
 
-                        kubectl apply -f k8s/secret.yaml
-                        kubectl apply -f k8s/Deployment.yaml
-                        kubectl apply -f k8s/service.yaml
+                        sed "s|image:.*|image: $REGISTRY/userauthentication/userauthentication:$COMMIT_SHA|" k8s/Deployment.yaml > k8s/Deployment-patched.yaml
 
-                        kubectl rollout restart deployment userauthenticationdeployment -n fintracker
+                        kubectl apply -f k8s/secret.yaml
+                        kubectl apply -f k8s/service.yaml
+                        kubectl apply -f k8s/Deployment-patched.yaml
                     '''
                 }
             }
@@ -91,14 +91,30 @@ pipeline {
                         docker build -t $REGISTRY/frontend/fintrackerfrontend:$COMMIT_SHA .
                         docker push $REGISTRY/frontend/fintrackerfrontend:$COMMIT_SHA
 
-                        kubectl apply -f k8s/managed-cert.yaml
-                        kubectl apply -f k8s/Deployment.yaml
-                        kubectl apply -f k8s/service.yaml
-                        kubectl apply -f k8s/ingress.yaml
+                        sed "s|image:.*|image: $REGISTRY/frontend/fintrackerfrontend:$COMMIT_SHA|" k8s/Deployment.yaml > k8s/Deployment-patched.yaml
 
-                        kubectl rollout restart deployment fintrackerfrontenddeployment  -n fintracker                  '''
+                        kubectl apply -f k8s/service.yaml
+                        kubectl apply -f k8s/managed-cert.yaml
+                        kubectl apply -f k8s/ingress.yaml
+                        kubectl apply -f k8s/Deployment-patched.yaml
+                    '''
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            script {
+                // Clean up workspace
+                cleanWs()
+            }
+        }
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }
