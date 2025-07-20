@@ -6,7 +6,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,11 +28,16 @@ import java.util.UUID;
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(TokenAuthenticationFilter.class);
-    @Autowired
-    private TokenProvider tokenProvider;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final TokenProvider tokenProvider;
+
+
+    private final UserRepository userRepository;
+
+    public TokenAuthenticationFilter( TokenProvider tokenProvider, UserRepository userRepository) {
+        this.tokenProvider = tokenProvider;
+        this.userRepository = userRepository;
+    }
 
     private boolean isPublicEndpoint(String requestURI) {
         return requestURI.startsWith("/userauthservice/api/auth/") ||
@@ -42,9 +46,9 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                 requestURI.startsWith("/v3/") || requestURI.startsWith("/actuator/");
     }
 
-
+    @SuppressWarnings("NullableProblems")
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException, AuthenticationException {
+    protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException, AuthenticationException {
         try{
             String requestURI = request.getRequestURI();
 
@@ -56,6 +60,9 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                 System.out.println(requestURI);
             }
             String jwt=getJWTFromRequest(request);
+            logger.info("jwt token is {}", jwt);
+
+
             if(StringUtils.hasText(jwt) &&  tokenProvider.validateToken(jwt)) {
                 UUID userId = tokenProvider.getUserIdFromJWT(jwt);
                 Optional<User> user=userRepository.findByUserId(userId);
@@ -73,6 +80,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
             else{
+                logger.error("Error with validating the token");
                 throw new BadRequestException("Sorry Something wrong with the token");
             }
         }
