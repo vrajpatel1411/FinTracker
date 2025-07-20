@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'linux1' }
+    agent any
 
     environment {
         PROJECT_ID = 'fintracker-466022'
