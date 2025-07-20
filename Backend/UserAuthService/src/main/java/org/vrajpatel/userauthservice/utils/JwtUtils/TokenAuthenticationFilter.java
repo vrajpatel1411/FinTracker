@@ -21,6 +21,7 @@ import org.vrajpatel.userauthservice.model.User;
 import org.vrajpatel.userauthservice.utils.UserPrincipal;
 
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -51,6 +52,16 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException, AuthenticationException {
         try{
             String requestURI = request.getRequestURI();
+            logger.info(">>> Incoming Request: {} {}", request.getMethod(), request.getRequestURI());
+
+            Enumeration<String> headerNames = request.getHeaderNames();
+            if (headerNames != null) {
+                while (headerNames.hasMoreElements()) {
+                    String header = headerNames.nextElement();
+                    String value = request.getHeader(header);
+                    logger.info("{}: {}", header, value);
+                }
+            }
 
             if (isPublicEndpoint(requestURI)) {
                 filterChain.doFilter(request, response); // Skip the filter
