@@ -6,6 +6,7 @@ pipeline {
         REGION = 'us-central1'
         CLUSTER = 'fintracker-cluster'
         REGISTRY = "us-central1-docker.pkg.dev/${PROJECT_ID}/fintracker"
+        GOOGLE_APPLICATION_CREDENTIALS = credentials('GCP_SERVICE_ACCOUNT_KEY')
     }
 
     tools {
@@ -15,168 +16,90 @@ pipeline {
     }
 
     stages {
-
-        // ==== Fintracker Gateway Service ====
-        stage("Clean Gateway Service") {
+        stage('Checkout') {
             steps {
-                dir("${env.workspace}/Backend/FintrackerGateway") {
-                    sh 'mvn clean'
+                checkout scm
+                script {
+                    COMMIT_SHA = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    env.COMMIT_SHA = COMMIT_SHA
                 }
             }
         }
 
-        stage("Package Gateway Service") {
+        stage('GCP Auth') {
             steps {
-                dir("${env.workspace}/Backend/FintrackerGateway") {
-                    sh 'mvn package -DskipTests'
+                sh '''
+                    gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+                    gcloud config set project $PROJECT_ID
+                    gcloud auth configure-docker $REGION-docker.pkg.dev --quiet
+                    gcloud container clusters get-credentials $CLUSTER --region $REGION
+                '''
+            }
+        }
+
+        stage('Build & Deploy Gateway Service') {
+            when {
+                expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Backend/FintrackerGateway", returnStatus: true) == 0 }
+            }
+            steps {
+                dir('Backend/FintrackerGateway') {
+                    sh '''
+                        mvn clean package -DskipTests
+                        docker build -t $REGISTRY/gateway/fintrackergateway:$COMMIT_SHA .
+                        docker push $REGISTRY/gateway/fintrackergateway:$COMMIT_SHA
+
+                        kubectl apply -f k8s/Deployment.yaml
+                        kubectl apply -f k8s/service.yaml
+                        kubectl apply -f k8s/managed-cert.yaml
+                        kubectl apply -f k8s/ingress.yaml
+                        kubectl apply -f k8s/backend.yaml
+
+                        kubectl rollout restart deployment fintracker-gateway
+                    '''
                 }
             }
         }
 
-        stage("Build Gateway Docker Image") {
+        stage('Build & Deploy Auth Service') {
+            when {
+                expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Backend/UserAuthService", returnStatus: true) == 0 }
+            }
             steps {
-                dir("${env.workspace}/Backend/FintrackerGateway") {
-                    sh 'docker build -t fintrackergateway:latest .'
+                dir('Backend/UserAuthService') {
+                    sh '''
+                        mvn clean package -DskipTests
+                        docker build -t $REGISTRY/userauthentication/userauthentication:$COMMIT_SHA .
+                        docker push $REGISTRY/userauthentication/userauthentication:$COMMIT_SHA
+
+                        kubectl apply -f k8s/secret.yaml
+                        kubectl apply -f k8s/Deployment.yaml
+                        kubectl apply -f k8s/service.yaml
+
+                        kubectl rollout restart deployment userauth-deployment
+                    '''
                 }
             }
         }
 
-        stage("Push Gateway Docker Image to GCR") {
+        stage('Build & Deploy Frontend') {
+            when {
+                expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Frontend/fintracker-frontend", returnStatus: true) == 0 }
+            }
             steps {
-                dir("${env.workspace}/Backend/FintrackerGateway") {
-                    withCredentials([file(credentialsId: 'GCP_SERVICE_ACCOUNT_KEY', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-                        sh """
-                            gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
-                            gcloud config set project $PROJECT_ID
-                            gcloud auth configure-docker $REGION-docker.pkg.dev --quiet
+                dir('Frontend/fintracker-frontend') {
+                    sh '''
+                        docker build -t $REGISTRY/frontend/fintrackerfrontend:$COMMIT_SHA .
+                        docker push $REGISTRY/frontend/fintrackerfrontend:$COMMIT_SHA
 
-                            docker tag fintrackergateway:latest $REGISTRY/gateway/fintrackergateway:latest
-                            docker push $REGISTRY/gateway/fintrackergateway:latest
-                        """
-                    }
+                        kubectl apply -f k8s/managed-cert.yaml
+                        kubectl apply -f k8s/Deployment.yaml
+                        kubectl apply -f k8s/service.yaml
+                        kubectl apply -f k8s/ingress.yaml
+
+                        kubectl rollout restart deployment fintracker-frontend
+                    '''
                 }
             }
         }
-
-        stage("Deploy Gateway to GKE") {
-            steps {
-                dir("${env.workspace}/Backend/FintrackerGateway") {
-                    withCredentials([file(credentialsId: 'GCP_SERVICE_ACCOUNT_KEY', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-                        sh """
-                            gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
-                            gcloud config set project $PROJECT_ID
-                            gcloud container clusters get-credentials $CLUSTER --region $REGION
-
-                            kubectl apply -f k8s/Deployment.yaml
-                            kubectl apply -f k8s/service.yaml
-                            kubectl apply -f k8s/managed-cert.yaml
-                            kubectl apply -f k8s/ingress.yaml
-                            kubectl apply -f k8s/backend.yaml
-                        """
-                    }
-                }
-            }
-        }
-
-        // ==== User Authentication Service ====
-        stage("Clean Auth Service") {
-            steps {
-                dir("${env.workspace}/Backend/UserAuthService") {
-                    sh 'mvn clean'
-                }
-            }
-        }
-
-        stage("Package Auth Service") {
-            steps {
-                dir("${env.workspace}/Backend/UserAuthService") {
-                    sh 'mvn package -DskipTests'
-                }
-            }
-        }
-
-        stage("Build Auth Docker Image") {
-            steps {
-                dir("${env.workspace}/Backend/UserAuthService") {
-                    sh 'docker build -t userauth:latest .'
-                }
-            }
-        }
-
-        stage("Push Auth Docker Image to GCR") {
-            steps {
-                dir("${env.workspace}/Backend/UserAuthService") {
-                    withCredentials([file(credentialsId: 'GCP_SERVICE_ACCOUNT_KEY', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-                        sh """
-                            gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
-                            gcloud config set project $PROJECT_ID
-                            gcloud auth configure-docker $REGION-docker.pkg.dev --quiet
-
-                            docker tag userauth:latest $REGISTRY/userauthentication/userauthentication:latest
-                            docker push $REGISTRY/userauthentication/userauthentication:latest
-                        """
-                    }
-                }
-            }
-        }
-
-        stage("Deploy Auth to GKE") {
-            steps {
-                dir("${env.workspace}/Backend/UserAuthService") {
-                    withCredentials([file(credentialsId: 'GCP_SERVICE_ACCOUNT_KEY', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-                        sh """
-                            gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
-                            gcloud config set project $PROJECT_ID
-                            gcloud container clusters get-credentials $CLUSTER --region $REGION
-
-                            kubectl apply -f k8s/secret.yaml
-                            kubectl apply -f k8s/Deployment.yaml
-                            kubectl apply -f k8s/service.yaml
-                        """
-                    }
-                }
-            }
-        }
-        stage("Build Frontend Docker Image") {
-                    steps {
-                        dir("${env.workspace}/Frontend/fintracker-frontend") {
-                            sh 'docker build -t fintrackerfrontend:latest .'
-                        }
-                    }
-        }
-        stage("Push frontend Docker Image to GCR") {
-                    steps {
-                        dir("${env.workspace}/Frontend/fintracker-frontend") {
-                            withCredentials([file(credentialsId: 'GCP_SERVICE_ACCOUNT_KEY', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-                                sh """
-                                    gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
-                                    gcloud config set project $PROJECT_ID
-                                    gcloud auth configure-docker $REGION-docker.pkg.dev --quiet
-
-                                    docker tag fintrackerfrontend:latest $REGISTRY/frontend/fintrackerfrontend:latest
-                                    docker push $REGISTRY/frontend/fintrackerfrontend:latest
-                                """
-                            }
-                        }
-                    }
-         }
-         stage("Deploy frontend to GKE") {
-                     steps {
-                         dir("${env.workspace}/Frontend/fintracker-frontend") {
-                             withCredentials([file(credentialsId: 'GCP_SERVICE_ACCOUNT_KEY', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-                                 sh """
-                                     gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
-                                     gcloud config set project $PROJECT_ID
-                                     gcloud container clusters get-credentials $CLUSTER --region $REGION
-
-                                     kubectl apply -f k8s/managed-cert.yaml
-                                     kubectl apply -f k8s/Deployment.yaml
-                                     kubectl apply -f k8s/service.yaml
-                                     kubectl apply -f k8s/ingress.yaml
-                                 """
-                             }
-                         }
-                     }
-                 }
     }
 }
