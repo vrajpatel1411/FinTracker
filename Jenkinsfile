@@ -54,7 +54,7 @@ pipeline {
                         kubectl apply -f k8s/ingress.yaml
                         kubectl apply -f k8s/backend.yaml
 
-                        kubectl rollout restart deployment gatewaydeployment
+                        kubectl rollout restart deployment gatewaydeployment -n fintracker
                     '''
                 }
             }
@@ -75,7 +75,7 @@ pipeline {
                         kubectl apply -f k8s/Deployment.yaml
                         kubectl apply -f k8s/service.yaml
 
-                        kubectl rollout restart deployment userauthenticationdeployment
+                        kubectl rollout restart deployment userauthenticationdeployment -n fintracker
                     '''
                 }
             }
@@ -96,7 +96,7 @@ pipeline {
                         kubectl apply -f k8s/service.yaml
                         kubectl apply -f k8s/ingress.yaml
 
-                        kubectl rollout restart deployment fintrackerfrontenddeployment                    '''
+                        kubectl rollout restart deployment fintrackerfrontenddeployment  -n fintracker                  '''
                 }
             }
         }
