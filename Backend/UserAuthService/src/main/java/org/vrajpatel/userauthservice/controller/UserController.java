@@ -16,7 +16,7 @@ import org.vrajpatel.userauthservice.utils.UserPrincipal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/userauthservice/api/user")
+@RequestMapping("/userauth/api/user")
 public class UserController {
 
     private final UserService userService;
