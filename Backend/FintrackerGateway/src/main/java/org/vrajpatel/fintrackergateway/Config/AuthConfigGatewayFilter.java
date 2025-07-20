@@ -56,6 +56,7 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
             }
 //                String requestBody = String.format("{\"Authorization\": \"%s\"}", authHeader);
                 authHeader = "Bearer "+authHeader;
+            logger.info("Auth header: "+authHeader);
             return webClient.post()
                         .uri("/validate")
                         .header("Authorization", authHeader)
