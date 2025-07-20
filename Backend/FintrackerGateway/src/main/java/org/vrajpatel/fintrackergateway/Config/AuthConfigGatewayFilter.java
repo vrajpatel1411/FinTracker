@@ -54,12 +54,12 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
             if (authHeader == null || authHeader.isEmpty()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization header is empty"));
             }
-//                String requestBody = String.format("{\"Authorization\": \"%s\"}", authHeader);
-                authHeader = "Bearer "+authHeader;
-            logger.info("Auth header: "+authHeader);
+                String requestBody = String.format("{\"Authorization\": \"%s\"}", authHeader);
+//            authHeader = "Bearer "+authHeader;
+//            logger.info("Auth header: "+authHeader);
             return webClient.post()
                         .uri("/validate")
-                        .header("Authorization", authHeader)
+                        .body(requestBody, String.class)
                         .retrieve()
                         .bodyToMono(ValidationResponseDto.class)
                         .flatMap(response -> {
