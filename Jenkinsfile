@@ -109,6 +109,7 @@ pipeline {
             steps {
                 dir('Backend/personalExpense') {
                     sh '''
+                        mvn clean package -DskipTests
                         docker build -t $REGISTRY/personalexpense/personalexpense:$COMMIT_SHA .
                         docker push $REGISTRY/personalexpense/personalexpense:$COMMIT_SHA
 
