@@ -1,0 +1,8 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: fintracker-frontend-cert
+  namespace: fintracker
+spec:
+  domains:
+    - frontend.vrajpatelproject.software

@@ -1,6 +1,6 @@
 import { Dispatch } from "react"
 
-import { delay, easeInOut, easeOut, motion } from "motion/react"
+import { motion } from "motion/react"
 
 const Modal = ({error,setModal}:{error:string | null,setModal:Dispatch<boolean>}) => {
   return (

@@ -1,0 +1,23 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: gatewaydeployment
+  namespace: fintracker
+  labels:
+    env: prod
+    type: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      type: gatewaypod
+  template:
+    metadata:
+      labels:
+        type: gatewaypod
+    spec:
+      containers:
+        - name: gatewayimage
+          image: us-central1-docker.pkg.dev/fintracker-466022/fintracker/gateway/fintrackergateway:latest
+          ports:
+            - containerPort: 8080

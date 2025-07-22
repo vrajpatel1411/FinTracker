@@ -2,11 +2,12 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import User from "../../Types/User";
 import axios from "axios";
 
+
  const registerUser = createAsyncThunk(
     "auth/registerUser",
     async (user: User) => {
         try{
-            const registerUser = await axios.post("http://localhost:8081/userauthservice/api/auth/register", user,{
+            const registerUser = await axios.post(import.meta.env.VITE_REGISTER_URL, user,{
                 withCredentials: true
             });
             return registerUser.data;
