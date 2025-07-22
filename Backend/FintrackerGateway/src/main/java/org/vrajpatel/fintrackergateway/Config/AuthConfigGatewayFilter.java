@@ -61,7 +61,7 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
                 return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization token missing"));
             }
 
-            String requestBody = String.format("{\"Authorization\": \"%s\"}", authHeader);
+            String requestBody = String.format("{\"jwt\": \"%s\"}", authHeader);
 
             return webClient.post()
                     .uri("/validate")
