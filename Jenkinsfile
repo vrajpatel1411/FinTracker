@@ -81,15 +81,15 @@ pipeline {
             }
         }
 
-        stage('Build & Deploy Frontend') {
-            // when {
-            //     expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Frontend/fintracker-frontend", returnStatus: true) == 0 }
-            // }
-            steps {
-                dir('Frontend/fintracker-frontend') {
-                    sh '''
-                        docker build -t $REGISTRY/frontend/fintrackerfrontend:$COMMIT_SHA .
-                        docker push $REGISTRY/frontend/fintrackerfrontend:$COMMIT_SHA
+        // stage('Build & Deploy Frontend') {
+        //     // when {
+        //     //     expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Frontend/fintracker-frontend", returnStatus: true) == 0 }
+        //     // }
+        //     steps {
+        //         dir('Frontend/fintracker-frontend') {
+        //             sh '''
+        //                 docker build -t $REGISTRY/frontend/fintrackerfrontend:$COMMIT_SHA .
+        //                 docker push $REGISTRY/frontend/fintrackerfrontend:$COMMIT_SHA
 
                         sed "s|image:.*|image: $REGISTRY/frontend/fintrackerfrontend:$COMMIT_SHA|" k8s/Deployment.yaml > k8s/Deployment-patched.yaml
 
