@@ -1,0 +1,39 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: personalexpensedeployment
+  namespace: fintracker
+  labels:
+    env: prod
+    type: personalexpense
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      type: personalexpensepod
+  template:
+    metadata:
+      labels:
+        type: personalexpensepod
+    spec:
+      containers:
+        - name: personalexpenseimage
+          image: us-central1-docker.pkg.dev/fintracker-466022/fintracker/personalexpense/personalexpense:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: DB_URL
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: DB_USERNAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: DB_PASSWORD

@@ -5,25 +5,23 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f6e128c8-57ca-4b9b-9a98-cf2feabc71c4" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Repository/CategoryRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Repository/PersonalExpenseRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Service/PersonalExpenseService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/model/CategoriesModel.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/model/PersonalExpenseModel.java" afterDir="false" />
+
+      <change afterPath="$PROJECT_DIR$/Backend/personalExpense/Dockerfile" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Backend/personalExpense/k8s/Deployment.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Backend/personalExpense/k8s/secrets.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Backend/personalExpense/k8s/service.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Repository/CategoryRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Repository/PersonalExpenseRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Service/PersonalExpenseService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/model/CategoriesModel.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/model/PersonalExpenseModel.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Backend/personalExpense/src/main/resources/application-dev.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Backend/personalExpense/src/main/resources/application-prod.properties" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-auth" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-auth/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/resources/application-prod.properties" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-auth/Backend/UserAuthService/src/main/resources/application-prod.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-expense" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-expense" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-expense/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-expense/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Controller/testing.java" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-expense/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Controller/testing.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-frontend" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-frontend" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-frontend/Frontend/fintracker-frontend/src/Utils/HandleOauthLogin.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-frontend/Frontend/fintracker-frontend/src/Utils/HandleOauthLogin.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-gateway" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-gateway" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/FinTracker-gateway/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/FinTracker-gateway/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Jenkinsfile" beforeDir="false" afterPath="$PROJECT_DIR$/Jenkinsfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/personalExpense/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/personalExpense/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Controller/testing.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/personalExpense/src/main/java/org/vrajpatel/personalexpense/Controller/testing.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/personalExpense/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/personalExpense/src/main/resources/application.properties" afterDir="false" />
+
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,10 +43,12 @@
     &quot;accountId&quot;: &quot;f7c92927-3648-4efd-b1a4-c390a6f311a0&quot;
   }
 }</component>
-  <component name="KubernetesApiPersistence">{}</component>
-  <component name="KubernetesApiProvider">{
-  &quot;isMigrated&quot;: true
-}</component>
+
+  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
+  <component name="KubernetesApiProvider"><![CDATA[{
+  "isMigrated": true
+}]]></component>
+
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 3
 }</component>
@@ -61,9 +61,11 @@
   "keyToString": {
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "personalexpense",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/vrajp/Desktop/Personal/projects/FinTracker",
+
+    "last_opened_file_path": "C:/Users/vrajp/Desktop/Personal/projects/FinTracker/FinTracker-expense/Backend/personalExpense/src/main/resources",
+
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -72,6 +74,11 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\vrajp\Desktop\Personal\projects\FinTracker\FinTracker-expense\Backend\personalExpense\src\main\resources" />
+    </key>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -89,13 +96,11 @@
       <option name="presentableId" value="Default" />
       <updated>1738629699072</updated>
       <workItem from="1738629700300" duration="30000" />
-      <workItem from="1752698764465" duration="61000" />
-      <workItem from="1752698895729" duration="204000" />
-      <workItem from="1752699123930" duration="15000" />
-      <workItem from="1752699157597" duration="2419000" />
-      <workItem from="1752703215943" duration="2184000" />
-      <workItem from="1752719291003" duration="2270000" />
-      <workItem from="1752761356730" duration="10401000" />
+
+      <workItem from="1748826721674" duration="61000" />
+      <workItem from="1753213197839" duration="1874000" />
+
+  
     </task>
     <servers />
   </component>
