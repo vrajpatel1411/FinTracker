@@ -44,43 +44,52 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
     public GatewayFilter apply(Config cfg) {
         return (exchange, chain) -> {
 
-            String authHeader=null;
-            try {
-                 authHeader = exchange.getRequest().getCookies().getFirst("jwttoken").getValue();
-            }
-            catch (NullPointerException e) {
-                return Mono.error(new BadException("Jwt Token not found in request header"));
-            }
-            if (authHeader == null || authHeader.isEmpty()) {
-                return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization header is empty"));
-            }
-                String requestBody = String.format("{\"Authorization\": \"%s\"}", authHeader);
-//            authHeader = "Bearer "+authHeader;
-//            logger.info("Auth header: "+authHeader);
-            return webClient.post()
-                        .uri("/validate")
-                        .bodyValue(requestBody)
-                        .retrieve()
-                        .bodyToMono(ValidationResponseDto.class)
-                        .flatMap(response -> {
-                            if (response.isValid()) {
-                                ServerHttpRequest mutatedRequest = exchange.getRequest()
-                                        .mutate()
-                                        .header("userEmail", response.getUserEmail())
-                                        .header("userId", response.getUserId())
-                                        .build();
-                                return chain.filter(exchange.mutate().request(mutatedRequest).build());
-                            } else {
-                                return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "JWT validation failed"));
-                            }
-                        })
-                        .onErrorResume(Exception.class, e -> {
-                            return Mono.error(new ResponseStatusException(
-                                    HttpStatus.BAD_GATEWAY,
-                                    "Error validating JWT: " + e.getMessage()
-                            ));
-                        });
+            logger.info("Inside AuthConfigGatewayFilter");
 
+            String authHeader = null;
+            try {
+                if (exchange.getRequest().getCookies().getFirst("jwttoken") != null) {
+                    authHeader = exchange.getRequest().getCookies().getFirst("jwttoken").getValue();
+                    logger.info("JWT Token found: " + authHeader);
+                }
+            } catch (Exception e) {
+                logger.error("Error extracting JWT token: " + e.getMessage());
+            }
+
+            if (authHeader == null || authHeader.isEmpty()) {
+                logger.warn("JWT Token is missing");
+                return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization token missing"));
+            }
+
+            String requestBody = String.format("{\"Authorization\": \"%s\"}", authHeader);
+
+            return webClient.post()
+                    .uri("/validate")
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(ValidationResponseDto.class)
+                    .flatMap(response -> {
+                        if (response.isValid()) {
+                            logger.info("JWT is valid. User ID: {}, Email: {}", response.getUserId(), response.getUserEmail());
+                            ServerHttpRequest mutatedRequest = exchange.getRequest()
+                                    .mutate()
+                                    .header("userEmail", response.getUserEmail())
+                                    .header("userId", response.getUserId())
+                                    .build();
+                            return chain.filter(exchange.mutate().request(mutatedRequest).build());
+                        } else {
+                            logger.warn("JWT validation failed");
+                            return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "JWT validation failed"));
+                        }
+                    })
+                    .onErrorResume(Exception.class, e -> {
+                        logger.error("Error validating JWT: {}", e.getMessage());
+                        return Mono.error(new ResponseStatusException(
+                                HttpStatus.BAD_GATEWAY,
+                                "Error validating JWT: " + e.getMessage()
+                        ));
+                    });
         };
     }
+
 }
