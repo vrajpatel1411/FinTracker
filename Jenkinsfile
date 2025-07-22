@@ -2,16 +2,16 @@ pipeline {
     agent any
 
     environment {
-        PROJECT_ID = 'fintracker-466022'
+        PROJECT_ID = 'fintracker-466620'
         REGION = 'us-central1'
         CLUSTER = 'fintracker-cluster'
-        REGISTRY = "us-central1-docker.pkg.dev/${PROJECT_ID}/fintracker"
+        REGISTRY = "us-central1-docker.pkg.dev/${PROJECT_ID}/fintracker-docker-registry"
         GOOGLE_APPLICATION_CREDENTIALS = credentials('GCP_SERVICE_ACCOUNT_KEY')
     }
 
     tools {
         git 'Default'
-        maven 'Maven-3.9.10'
+        maven 'maven-3.9.11'
         dockerTool 'docker'
     }
 
@@ -38,9 +38,9 @@ pipeline {
         }
 
         stage('Build & Deploy Gateway Service') {
-            when {
-                expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Backend/FintrackerGateway", returnStatus: true) == 0 }
-            }
+            // when {
+            //     expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Backend/FintrackerGateway", returnStatus: true) == 0 }
+            // }
             steps {
                 dir('Backend/FintrackerGateway') {
                     sh '''
@@ -61,9 +61,9 @@ pipeline {
         }
 
         stage('Build & Deploy Auth Service') {
-            when {
-                expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Backend/UserAuthService", returnStatus: true) == 0 }
-            }
+            // when {
+            //     expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Backend/UserAuthService", returnStatus: true) == 0 }
+            // }
             steps {
                 dir('Backend/UserAuthService') {
                     sh '''
@@ -82,9 +82,9 @@ pipeline {
         }
 
         stage('Build & Deploy Frontend') {
-            when {
-                expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Frontend/fintracker-frontend", returnStatus: true) == 0 }
-            }
+            // when {
+            //     expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Frontend/fintracker-frontend", returnStatus: true) == 0 }
+            // }
             steps {
                 dir('Frontend/fintracker-frontend') {
                     sh '''
