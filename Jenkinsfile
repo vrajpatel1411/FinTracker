@@ -73,7 +73,7 @@ pipeline {
 
                         sed "s|image:.*|image: $REGISTRY/userauthentication/userauthentication:$COMMIT_SHA|" k8s/Deployment.yaml > k8s/Deployment-patched.yaml
 
-                        kubectl apply -f k8s/secret.yaml
+                       
                         kubectl apply -f k8s/service.yaml
                         kubectl apply -f k8s/Deployment-patched.yaml
                     '''
@@ -96,6 +96,26 @@ pipeline {
                         kubectl apply -f k8s/service.yaml
                         kubectl apply -f k8s/managed-cert.yaml
                         kubectl apply -f k8s/ingress.yaml
+                        kubectl apply -f k8s/Deployment-patched.yaml
+                    '''
+                }
+            }
+        }
+
+        stage('Build & Deploy Personal Expense Service') {
+            // when {
+            //     expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Frontend/fintracker-frontend", returnStatus: true) == 0 }
+            // }
+            steps {
+                dir('Backend/personalExpense') {
+                    sh '''
+                        docker build -t $REGISTRY/personalexpense/personalexpense:$COMMIT_SHA .
+                        docker push $REGISTRY/personalexpense/personalexpense:$COMMIT_SHA
+
+                        sed "s|image:.*|image: $REGISTRY/personalexpense/personalexpense:$COMMIT_SHA|" k8s/Deployment.yaml > k8s/Deployment-patched.yaml
+
+                        kubectl apply -f k8s/service.yaml
+                        kubectl apply -f k8s/secrets.yaml
                         kubectl apply -f k8s/Deployment-patched.yaml
                     '''
                 }

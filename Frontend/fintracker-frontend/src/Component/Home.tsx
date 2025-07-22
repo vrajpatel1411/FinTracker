@@ -21,7 +21,7 @@ useEffect(() => {
     .unwrap()
     .then(() => {
       // Step 2: If valid, fetch personal data
-      return axios.get("http://localhost:8081/personalexpense/", {
+      return axios.get("https://fintracker.vrajpatelproject.software/personalexpense/", {
         withCredentials: true,
       });
     })
