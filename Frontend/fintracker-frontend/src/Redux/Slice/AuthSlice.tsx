@@ -10,7 +10,6 @@ const initialState: AuthState = {
     isAuthenticated: false,
     message: '',
     isError: false,
-    isValidUser: false,
 }
 
 export const authSlice = createSlice({
@@ -19,89 +18,68 @@ export const authSlice = createSlice({
     reducers:{
         
     },
-    extraReducers: (builder) => {
-        builder.addCase(registerUser.pending, (state) => {
-            state.isAuthenticated = false;
-          
-        })
-        .addCase(registerUser.fulfilled, (state, action) => {
-            if(action.payload?.status){
-                state.isAuthenticated = true;
-                
-           
-            state.message = action.payload.message;
-            state.isError = false;
-            }
-            else{
-                
-                state.isAuthenticated = false;
-                state.isError = true;
-                state.message = (action.payload as { message: string }).message || "";
-            }
-        })
-        .addCase(registerUser.rejected, (state, action) => {
-            state.isAuthenticated = false;
-            state.isError = true;
-            state.message = (action.payload as { message: string }).message || "";
-            
-        })
-        .addCase(loginUser.pending, (state) => {
-            state.isAuthenticated = false;
-           
-        })
-        .addCase(loginUser.fulfilled, (state, action) => {
-            console.log(action.payload)
-            if(action.payload?.status ){
-                state.isAuthenticated = true;
-                state.message = action.payload.message;
-                state.isError = false;
-            }
-            else{
-                state.isAuthenticated = false;
-                state.isError = true;
-                state.message = (action.payload as { message: string }).message || "";
-            }
-        })
-        .addCase(loginUser.rejected, (state, action) => {
-           
-            state.isAuthenticated = false;
-            state.isError = true;
-            state.message = (action.payload as { message: string }).message || "";
-        })
-        .addCase(validateUser.pending, (state) => {
-            state.isAuthenticated = false;
-        })
-        .addCase(validateUser.fulfilled, (state, action) => {
-            if(action.payload?.valid){
-                state.isAuthenticated = true;
-                state.isValidUser = true;
-            }
-            else{
-                state.isAuthenticated = false;
-               state.isValidUser = false;
-            }
-        })
-        .addCase(validateUser.rejected, (state, action) => {
-            state.isAuthenticated = false;
-            state.isError = true;
-            state.message = (action.payload as { message: string }).message || "";
-        })
-        .addCase(Oauth2Success.pending, (state) => {
-            state.isAuthenticated = false;
-        })
-        .addCase(Oauth2Success.fulfilled, (state, action) => {
+   extraReducers: (builder) => {
+    // REGISTER
+    builder.addCase(registerUser.fulfilled, (state, action) => {
+      if (action.payload?.status === true) {
+        state.isAuthenticated = true;
+        state.isError = false;
+        state.message = action.payload.message;
+      } else {
+        state.isAuthenticated = false;
+        state.isError = true;
+        state.message = action.payload?.message || "Registration failed";
+      }
+    });
+    builder.addCase(registerUser.rejected, (state, action) => {
+      state.isAuthenticated = false;
+      state.isError = true;
+      state.message = (action.payload as { message: string })?.message || "Registration error";
+    });
 
-           if(action.payload!=null && action.payload){
-            state.isAuthenticated = true;
-           }
-           else{
-            state.isAuthenticated = false;
-           }
-           
-        })
-    }
-})
+    // LOGIN
+    builder.addCase(loginUser.fulfilled, (state, action) => {
+      if (action.payload?.status === true) {
+        state.isAuthenticated = true;
+        state.isError = false;
+        state.message = action.payload.message;
+      } else {
+        state.isAuthenticated = false;
+        state.isError = true;
+        state.message = action.payload?.message || "Login failed";
+      }
+    });
+    builder.addCase(loginUser.rejected, (state, action) => {
+      state.isAuthenticated = false;
+      state.isError = true;
+      state.message = (action.payload as { message: string })?.message || "Login error";
+    });
 
+    // VALIDATE
+    builder.addCase(validateUser.fulfilled, (state) => {
+      state.isAuthenticated = true;
+      state.isError = false;
+      state.message = '';
+    });
+    builder.addCase(validateUser.rejected, (state,) => {
+      state.isAuthenticated = false;
+     
+    });
+
+    // OAUTH
+    builder.addCase(Oauth2Success.fulfilled, (state, action) => {
+      if (action.payload) {
+        state.isAuthenticated = true;
+        state.isError = false;
+        state.message = '';
+      } else {
+        state.isAuthenticated = false;
+        state.isError = true;
+        state.message = "OAuth failed";
+      }
+    });
+  }
+});
 
 
 export default authSlice.reducer;

@@ -6,10 +6,10 @@ import axios from "axios";
     "auth/loginUser",
     async (user: UserLogin) => {
         try{
-            const loginUser = await axios.post("http://localhost:8081/userauthservice/api/auth/login", user,{
+            const loginUser = await axios.post(import.meta.env.VITE_LOGIN_URL, user,{
                 withCredentials: true
             });
-            console.log(loginUser.data);
+       
             return loginUser.data;
         }
         catch(error){

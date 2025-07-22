@@ -4,6 +4,7 @@ import org.apache.http.HttpHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpStatus;
@@ -27,10 +28,12 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
     }
     private WebClient webClient;
 
+    @Value("${validationUrl}")
+    private String validationUrl;
 
     public AuthConfigGatewayFilter() {
         super(Config.class);
-        this.webClient = WebClient.builder().baseUrl("http://localhost:8080/userauthservice/api/auth").defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+        this.webClient = WebClient.builder().baseUrl(validationUrl).defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }
 
@@ -51,10 +54,12 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
             if (authHeader == null || authHeader.isEmpty()) {
                 return Mono.error(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization header is empty"));
             }
-                String requestBody = String.format("{\"jwt\": \"%s\"}", authHeader);
-                return webClient.post()
+                String requestBody = String.format("{\"Authorization\": \"%s\"}", authHeader);
+//            authHeader = "Bearer "+authHeader;
+//            logger.info("Auth header: "+authHeader);
+            return webClient.post()
                         .uri("/validate")
-                        .bodyValue(requestBody)
+                        .body(requestBody, String.class)
                         .retrieve()
                         .bodyToMono(ValidationResponseDto.class)
                         .flatMap(response -> {
@@ -62,6 +67,7 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
                                 ServerHttpRequest mutatedRequest = exchange.getRequest()
                                         .mutate()
                                         .header("userEmail", response.getUserEmail())
+                                        .header("userId", response.getUserId())
                                         .build();
                                 return chain.filter(exchange.mutate().request(mutatedRequest).build());
                             } else {
