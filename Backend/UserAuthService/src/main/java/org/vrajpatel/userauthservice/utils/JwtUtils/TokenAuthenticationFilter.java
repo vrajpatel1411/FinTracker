@@ -41,6 +41,8 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isPublicEndpoint(String requestURI) {
+        logger.info(requestURI);
+
         return requestURI.startsWith("/userauth/api/auth/") ||
                 requestURI.startsWith("/oauth2/") ||
                 requestURI.startsWith("/swagger-ui/") ||
@@ -54,21 +56,21 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             String requestURI = request.getRequestURI();
             logger.info(">>> Incoming Request: {} {}", request.getMethod(), request.getRequestURI());
 
-            Enumeration<String> headerNames = request.getHeaderNames();
-            if (headerNames != null) {
-                while (headerNames.hasMoreElements()) {
-                    String header = headerNames.nextElement();
-                    String value = request.getHeader(header);
-                    logger.info("{}: {}", header, value);
-                }
-            }
+//            Enumeration<String> headerNames = request.getHeaderNames();
+//            if (headerNames != null) {
+//                while (headerNames.hasMoreElements()) {
+//                    String header = headerNames.nextElement();
+//                    String value = request.getHeader(header);
+//                    logger.info("{}: {}", header, value);
+//                }
+//            }
 
             if (isPublicEndpoint(requestURI)) {
                 filterChain.doFilter(request, response); // Skip the filter
                 return;
             }
             else{
-                System.out.println(requestURI);
+                logger.info(requestURI);
             }
             String jwt=getJWTFromRequest(request);
             logger.info("jwt token is {}", jwt);
