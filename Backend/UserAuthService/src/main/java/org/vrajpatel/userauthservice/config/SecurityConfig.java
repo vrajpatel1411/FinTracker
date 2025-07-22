@@ -59,24 +59,44 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(httpSecuritySessionManagementConfigurer -> httpSecuritySessionManagementConfigurer.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorizeRequests ->
-                        authorizeRequests.requestMatchers("/userauthservice/api/auth/**","/oauth2/**","/swagger-ui/**","/v3/**","/actuator/**").permitAll()
-                                .requestMatchers("/userauthservice/api/user/**").authenticated()
-                                .anyRequest().permitAll()
+                        authorizeRequests.requestMatchers("/userauth/api/auth/**","/oauth2/**","/swagger-ui/**","/v3/**","/actuator/**").permitAll()
+                                .requestMatchers("/userauth/api/user/**").authenticated()
                         )
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .oauth2Login(oauth ->
                         oauth
+                                // Configure the authorization endpoint where the OAuth2 flow is initiated
                                 .authorizationEndpoint(configure ->
                                         configure
+                                                // Override the default base URI to start the OAuth2 flow
                                                 .baseUri("/oauth2/authorize")
+
+                                                // Use a custom AuthorizationRequestRepository to store auth requests in cookies
+                                                // Useful for stateless apps (e.g., SPAs or RESTful backends)
                                                 .authorizationRequestRepository(new HttpCookieOauth2())
                                 )
+
+                                // Configure the endpoint to handle redirection after successful authorization
                                 .redirectionEndpoint(redirectionEndpointConfig ->
-                                        redirectionEndpointConfig.baseUri("/oauth2/callback/*"))
-                                .userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig.userService(customUserService))
-                                .successHandler(customSuccessHandler)
-                                .failureHandler(customFailureHandler));
+                                        // Set custom base URI pattern for the callback from the OAuth2 provider
+                                        // E.g., /oauth2/callback/google
+                                        redirectionEndpointConfig.baseUri("/oauth2/callback/*")
+                                )
+
+                                // Configure the User Info endpoint to retrieve user details after token exchange
+                                .userInfoEndpoint(userInfoEndpointConfig ->
+                                        // Use a custom service to process the user info returned from the provider
+                                        // Can be used to fetch additional fields or save user to your database
+                                        userInfoEndpointConfig.userService(customUserService)
+                                )
+
+                                // Define what happens when authentication is successful
+                                .successHandler(customSuccessHandler)  // E.g., generate token, redirect to frontend, etc.
+
+                                // Define what happens when authentication fails
+                                .failureHandler(customFailureHandler)  // E.g., redirect to error page, return 401, etc.
+                );
 
 
         return http.build();

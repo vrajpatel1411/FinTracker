@@ -27,6 +27,8 @@ public class UserController {
 
     @GetMapping("/")
     public ResponseEntity<UserResponse> getUser() {
+
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         UserPrincipal user = (UserPrincipal) authentication.getPrincipal();
