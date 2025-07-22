@@ -59,7 +59,7 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
 //            logger.info("Auth header: "+authHeader);
             return webClient.post()
                         .uri("/validate")
-                        .body(requestBody, String.class)
+                        .bodyValue(requestBody)
                         .retrieve()
                         .bodyToMono(ValidationResponseDto.class)
                         .flatMap(response -> {
