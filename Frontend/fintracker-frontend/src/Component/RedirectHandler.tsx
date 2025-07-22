@@ -1,13 +1,13 @@
 import  { useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import Oauth2Success from '../Redux/Reducers/Oauth2Success';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from '../Redux/hooks';
 
 const RedirectHandler = () => {
     const [queryParameter]=useSearchParams()
  
     const navigate=useNavigate();
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     useEffect(()=>{
         const getToken=queryParameter.get('success');
         console.log(getToken)

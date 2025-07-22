@@ -12,6 +12,14 @@ public abstract class UserInfo {
 
     public Map<String, Object> getUserInfo() {return userInfo;}
 
+    @Override
+    public String toString() {
+        return "UserInfo{" +
+                "userInfo=" + userInfo.toString() +
+                '}';
+    }
+
+
     public abstract String getName();
 
     public abstract String getEmail();

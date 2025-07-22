@@ -1,0 +1,13 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: gateway-backend-config
+  namespace: fintracker
+spec:
+  healthCheck:
+    checkIntervalSec: 15
+    port: 8080
+    requestPath: /actuator/health
+    timeoutSec: 5
+    healthyThreshold: 1
+    unhealthyThreshold: 3

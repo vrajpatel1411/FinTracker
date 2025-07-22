@@ -2,9 +2,18 @@ package org.vrajpatel.userauthservice.ResponseDTO;
 
 public class ValidationResponseDto {
 
-    public boolean valid;
-    public String message;
-    public String userEmail;
+    private boolean valid;
+    private String message;
+    private String userEmail;
+    private String userId;
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
 
     public String getMessage() {
         return message;

@@ -16,7 +16,7 @@ import org.vrajpatel.userauthservice.utils.UserPrincipal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/userauthservice/api/user")
+@RequestMapping("/userauth/api/user")
 public class UserController {
 
     private final UserService userService;
@@ -27,6 +27,8 @@ public class UserController {
 
     @GetMapping("/")
     public ResponseEntity<UserResponse> getUser() {
+
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         UserPrincipal user = (UserPrincipal) authentication.getPrincipal();

@@ -6,6 +6,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -38,6 +39,8 @@ public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     @Autowired
     private HttpCookieOauth2 cookieOauth2;
 
+    @Value("${domain}")
+    private String domain;
 
 
     @Override
@@ -55,8 +58,14 @@ public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         }
 
         if(token!=null){
-            ResponseCookie cookie=ResponseCookie.from("jwttoken",token).httpOnly(true).maxAge(3600).path("/").build();
-            System.out.print(cookie.toString());
+            ResponseCookie cookie=ResponseCookie.from("jwttoken",token) .httpOnly(true)
+                    .maxAge(3600)
+                    .sameSite("None")
+                    .domain(domain)
+                    .secure(true)
+                    .path("/")
+                    .build();
+
             response.addHeader(HttpHeaders.SET_COOKIE,cookie.toString());
         }
 
@@ -100,7 +109,5 @@ public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                             return false;
                         }
                 );
-
-
     }
 }

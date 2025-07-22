@@ -4,7 +4,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,30 +21,47 @@ import org.vrajpatel.userauthservice.model.User;
 import org.vrajpatel.userauthservice.utils.UserPrincipal;
 
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
+    private static final Logger logger = LoggerFactory.getLogger(TokenAuthenticationFilter.class);
 
-    @Autowired
-    private TokenProvider tokenProvider;
+    private final TokenProvider tokenProvider;
 
-    @Autowired
-    private UserRepository userRepository;
+
+    private final UserRepository userRepository;
+
+    public TokenAuthenticationFilter( TokenProvider tokenProvider, UserRepository userRepository) {
+        this.tokenProvider = tokenProvider;
+        this.userRepository = userRepository;
+    }
 
     private boolean isPublicEndpoint(String requestURI) {
-        return requestURI.startsWith("/userauthservice/api/auth/") ||
+        return requestURI.startsWith("/userauth/api/auth/") ||
                 requestURI.startsWith("/oauth2/") ||
                 requestURI.startsWith("/swagger-ui/") ||
                 requestURI.startsWith("/v3/") || requestURI.startsWith("/actuator/");
     }
 
-
+    @SuppressWarnings("NullableProblems")
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException, AuthenticationException {
+    protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException, AuthenticationException {
         try{
             String requestURI = request.getRequestURI();
+            logger.info(">>> Incoming Request: {} {}", request.getMethod(), request.getRequestURI());
+
+            Enumeration<String> headerNames = request.getHeaderNames();
+            if (headerNames != null) {
+                while (headerNames.hasMoreElements()) {
+                    String header = headerNames.nextElement();
+                    String value = request.getHeader(header);
+                    logger.info("{}: {}", header, value);
+                }
+            }
 
             if (isPublicEndpoint(requestURI)) {
                 filterChain.doFilter(request, response); // Skip the filter
@@ -53,9 +71,12 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                 System.out.println(requestURI);
             }
             String jwt=getJWTFromRequest(request);
+            logger.info("jwt token is {}", jwt);
+
+
             if(StringUtils.hasText(jwt) &&  tokenProvider.validateToken(jwt)) {
-                Long userId = tokenProvider.getUserIdFromJWT(jwt);
-                Optional<User> user=userRepository.findById(userId);
+                UUID userId = tokenProvider.getUserIdFromJWT(jwt);
+                Optional<User> user=userRepository.findByUserId(userId);
 
                 if(user.isPresent()) {
                     UserDetails userDetails = UserPrincipal.create(user.get());
@@ -70,16 +91,18 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
             else{
+                logger.error("Error with validating the token");
                 throw new BadRequestException("Sorry Something wrong with the token");
             }
         }
         catch(Exception e){
-//            logger.error("Could not set user authentication in security context", e);
+            logger.error("Could not set user authentication in security context", e);
             throw new BadRequestException(e.getMessage());
         }
 
         filterChain.doFilter(request, response);
     }
+
 
     private String getJWTFromRequest(HttpServletRequest request) {
         String token=request.getHeader("Authorization");
