@@ -26,15 +26,13 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
     public static class Config{
 
     }
-    private WebClient webClient;
+
 
     @Value("${validationUrl}")
     private String validationUrl;
 
     public AuthConfigGatewayFilter() {
         super(Config.class);
-        this.webClient = WebClient.builder().baseUrl(validationUrl).defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .build();
     }
 
     @Autowired
@@ -45,6 +43,7 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
         return (exchange, chain) -> {
 
             logger.info("Inside AuthConfigGatewayFilter");
+
 
             String authHeader = null;
             try {
@@ -62,7 +61,8 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
             }
 
             String requestBody = String.format("{\"jwt\": \"%s\"}", authHeader);
-
+            WebClient webClient = WebClient.builder().baseUrl(validationUrl).defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .build();
             return webClient.post()
                     .uri("/validate")
                     .bodyValue(requestBody)
