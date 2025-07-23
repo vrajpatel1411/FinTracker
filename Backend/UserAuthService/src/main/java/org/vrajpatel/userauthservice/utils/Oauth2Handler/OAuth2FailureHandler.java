@@ -30,6 +30,7 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
 
         targetUrl = UriComponentsBuilder.fromUriString(targetUrl)
                 .queryParam("success", "false")
+                .queryParam("error", exception.getMessage())
                 .build().toUriString();
 
         httpCookieOauth2.removeAuthorizationRequest(request, response);
