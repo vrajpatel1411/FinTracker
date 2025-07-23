@@ -10,7 +10,7 @@ const RedirectHandler = () => {
     const dispatch = useAppDispatch();
     useEffect(()=>{
         const getToken=queryParameter.get('success');
-        console.log(getToken)
+        console.log("type=>",getToken)
         
         if(getToken){
        
@@ -18,6 +18,8 @@ const RedirectHandler = () => {
             navigate("/home")
         }
         else{
+            console.log("error in redirect handler")
+            console.log("error=>",queryParameter.get('error'))
             dispatch(Oauth2Success(false));
             navigate("/login")
         }
