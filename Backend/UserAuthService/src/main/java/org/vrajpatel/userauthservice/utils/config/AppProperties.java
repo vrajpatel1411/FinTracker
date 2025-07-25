@@ -13,6 +13,25 @@ public class AppProperties {
     public static class Auth {
         private String tokenSecret;
         private long tokenExpirationMsec;
+        private long refreshTokenExpirationMsec;
+        private String refreshTokenSecret;
+
+        public String getRefreshTokenSecret() {
+            return refreshTokenSecret;
+        }
+
+        public void setRefreshTokenSecret(String refreshTokenSecret) {
+            this.refreshTokenSecret = refreshTokenSecret;
+        }
+
+        public long getRefreshTokenExpirationMsec() {
+            return refreshTokenExpirationMsec;
+        }
+
+        public void setRefreshTokenExpirationMsec(long refreshTokenExpirationMsec) {
+            this.refreshTokenExpirationMsec = refreshTokenExpirationMsec;
+        }
+
 
         public String getTokenSecret() {
             return tokenSecret;

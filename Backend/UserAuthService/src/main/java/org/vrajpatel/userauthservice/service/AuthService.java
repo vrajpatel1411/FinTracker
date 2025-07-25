@@ -2,8 +2,12 @@ package org.vrajpatel.userauthservice.service;
 
 import jakarta.validation.Valid;
 import jakarta.ws.rs.InternalServerErrorException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -23,20 +27,31 @@ import org.vrajpatel.userauthservice.Repository.UserRepository;
 import org.vrajpatel.userauthservice.ResponseDTO.AuthResponse;
 import org.vrajpatel.userauthservice.model.AuthProvider;
 import org.vrajpatel.userauthservice.model.User;
+import org.vrajpatel.userauthservice.model.UserTokens;
 import org.vrajpatel.userauthservice.requestDTO.RegisterUserDto;
 import org.vrajpatel.userauthservice.requestDTO.UserDTO;
 import org.vrajpatel.userauthservice.utils.JwtUtils.TokenProvider;
+import org.vrajpatel.userauthservice.utils.RefreshToken;
+import org.vrajpatel.userauthservice.utils.SetCookies;
 import org.vrajpatel.userauthservice.utils.UserPrincipal;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class AuthService {
 
+    private Logger logger = LoggerFactory.getLogger(AuthService.class);
+
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RefreshToken refreshToken;
+
+
 
     @Autowired
     private TokenProvider tokenProvider;
@@ -50,26 +65,20 @@ public class AuthService {
     public ResponseEntity<AuthResponse> loginService(@Valid UserDTO userDTO) throws  UserNotFound {
         try{
             Optional<User> user=userRepository.findByEmail(userDTO.getEmail().toLowerCase());
-
             if(user.isPresent()){
                 if(passwordEncoder.matches(userDTO.getPassword(), user.get().getPassword())){
                     UserPrincipal userPrincipal=UserPrincipal.create(user.get());
                     Authentication authentication=new UsernamePasswordAuthenticationToken(userPrincipal,new ArrayList<>());
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    String jwt= tokenProvider.createJWT(authentication);
-                    ResponseCookie cookie=ResponseCookie.from("jwttoken",jwt)
-                            .httpOnly(true)
-                            .maxAge(3600)
-                            .sameSite("None")
-                            .domain(domain)
-                            .secure(true)
-                            .path("/")
-                            .build();
+                    String accessToken= tokenProvider.createJWT(authentication);
+                    String refreshTokenKey= tokenProvider.createRefreshToken(authentication);
+
+                    refreshToken.setRefreshToken(refreshTokenKey,user.get().getEmail());
 
                     AuthResponse authResponse=new AuthResponse();
                     authResponse.setStatus(true);
                     authResponse.setMessage("Login successful");
-                    return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE,cookie.toString()).body(authResponse);
+                    return ResponseEntity.ok().headers(SetCookies.setCookies(new HttpHeaders(),accessToken,refreshTokenKey)).body(authResponse);
                 }
                 else{
                     AuthResponse authResponse=new AuthResponse();
@@ -82,7 +91,7 @@ public class AuthService {
                 throw new UserNotFound("User Not Yet Registered");
             }
         } catch (Exception e) {
-            throw new InternalServerError("Something went wrong");
+            throw new InternalServerError("Something went wrong"+ e.getMessage());
         }
     }
 
@@ -105,20 +114,13 @@ public class AuthService {
                 Authentication authentication = new UsernamePasswordAuthenticationToken(userPrincipal, new ArrayList<>());
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                String jwt = tokenProvider.createJWT(authentication);
+                String accessToken= tokenProvider.createJWT(authentication);
+                String refreshTokenKey= tokenProvider.createRefreshToken(authentication);
+                refreshToken.setRefreshToken(refreshTokenKey,user.getEmail());
                 AuthResponse authResponse = new AuthResponse();
                 authResponse.setStatus(true);
                 authResponse.setMessage("User Registration successful");
-                ResponseCookie cookie = ResponseCookie.from("jwttoken", jwt)
-                        .httpOnly(true)
-                        .maxAge(3600)
-                        .sameSite("None")
-                        .domain("vrajpatelproject.software")
-                        .secure(true)
-                        .path("/")
-                        .build();
-
-                return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(authResponse);
+                return ResponseEntity.ok().headers(SetCookies.setCookies(new HttpHeaders(),accessToken,refreshTokenKey)).body(authResponse);
 
             }
         }

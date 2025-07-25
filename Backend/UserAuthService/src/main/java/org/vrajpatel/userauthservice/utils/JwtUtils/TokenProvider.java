@@ -21,13 +21,15 @@ public class TokenProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(TokenProvider.class);
     private final AppProperties appProperties;
-    private final Key key;
+    private final Key accesskey;
+    private final Key refreshKey;
 
     public TokenProvider(AppProperties appProperties) {
         this.appProperties = appProperties;
 
         // Convert the secret key string to a proper Key object using UTF-8 encoding
-        this.key = Keys.hmacShaKeyFor(appProperties.getAuth().getTokenSecret().getBytes(StandardCharsets.UTF_8));
+        this.accesskey = Keys.hmacShaKeyFor(appProperties.getAuth().getTokenSecret().getBytes(StandardCharsets.UTF_8));
+        this.refreshKey=Keys.hmacShaKeyFor(appProperties.getAuth().getRefreshTokenSecret().getBytes(StandardCharsets.UTF_8));
     }
 
     public String createJWT(Authentication authentication) {
@@ -45,13 +47,31 @@ public class TokenProvider {
                 .claim("id", userPrincipal.getId().toString())
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(key, SignatureAlgorithm.HS256) // 🔐 No deprecation warning
+                .signWith(accesskey, SignatureAlgorithm.HS256) // 🔐 No deprecation warning
+                .compact();
+    }
+
+    public String createRefreshToken(Authentication authentication) {
+        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+        if (userPrincipal == null) {
+            return null;
+        }
+
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + appProperties.getAuth().getRefreshTokenExpirationMsec());
+
+        return Jwts.builder()
+                .setSubject(userPrincipal.getId().toString())
+                .claim("id", userPrincipal.getId().toString())
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(refreshKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
     public UUID getUserIdFromJWT(String jwt) {
         Claims claims = Jwts.parserBuilder()
-                .setSigningKey(key) // ✅ Use cached Key object
+                .setSigningKey(accesskey) // ✅ Use cached Key object
                 .build()
                 .parseClaimsJws(jwt)
                 .getBody();
@@ -59,9 +79,19 @@ public class TokenProvider {
         return UUID.fromString(claims.getSubject());
     }
 
+    public boolean validateRefreshToken(String refreshToken) {
+        try{
+            Jwts.parserBuilder().setSigningKey(refreshKey).build().parseClaimsJws(refreshToken);
+            return true;
+        }
+        catch (Exception e){
+            throw new BadRequestException("Invalid refresh token");
+        }
+    }
+
     public boolean validateToken(String authToken) {
         try {
-            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(authToken);
+            Jwts.parserBuilder().setSigningKey(accesskey).build().parseClaimsJws(authToken);
             return true;
         } catch (SignatureException ex) {
             logger.error("Invalid JWT signature");
