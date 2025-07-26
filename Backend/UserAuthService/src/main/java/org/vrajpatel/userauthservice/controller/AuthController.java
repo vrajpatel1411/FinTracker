@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.vrajpatel.userauthservice.Exception.AuthenticationServiceException.UserExistException;
 import org.vrajpatel.userauthservice.Exception.AuthenticationServiceException.UserNotFound;
 import org.vrajpatel.userauthservice.Repository.UserRepository;
+import org.vrajpatel.userauthservice.ResponseDTO.AccessTokenResponse;
 import org.vrajpatel.userauthservice.ResponseDTO.AuthResponse;
 import org.vrajpatel.userauthservice.ResponseDTO.ValidationResponseDto;
 import org.vrajpatel.userauthservice.model.User;
@@ -76,6 +77,7 @@ public class AuthController {
 
     @GetMapping("/validate")
     public ResponseEntity<ValidationResponseDto> validateUser(@CookieValue("jwttoken") String token) {
+        // Update according to the RefreshToken and AccessToken
         ValidationResponseDto response=new ValidationResponseDto();
         if(token !=null && tokenProvider.validateToken(token)) {
             response.setValid(true);
@@ -94,7 +96,7 @@ public class AuthController {
         ValidationResponseDto response=new ValidationResponseDto();
         if(StringUtils.hasText(jwtDto.getJwt()) ){
             if(tokenProvider.validateToken(jwtDto.getJwt())){
-               UUID id=tokenProvider.getUserIdFromJWT(jwtDto.getJwt());
+                UUID id=tokenProvider.getUserIdFromJWT(jwtDto.getJwt());
                 Optional<User> user=userRepository.findByUserId(id);
                 if(user.isPresent()){
                     response.setValid(true);
@@ -113,5 +115,10 @@ public class AuthController {
         response.setValid(false);
         response.setMessage("Failed");
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/getNewAccessToken")
+    public ResponseEntity<AccessTokenResponse> getNewAccessToken(@Valid @RequestBody JwtDto jwtDto) {
+        return authService.getNewAccessToken(jwtDto);
     }
 }

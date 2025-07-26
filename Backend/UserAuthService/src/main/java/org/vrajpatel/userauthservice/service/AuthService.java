@@ -20,14 +20,17 @@ import org.springframework.security.core.token.TokenService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.vrajpatel.userauthservice.Exception.AuthenticationServiceException.InternalServerError;
 import org.vrajpatel.userauthservice.Exception.AuthenticationServiceException.UserExistException;
 import org.vrajpatel.userauthservice.Exception.AuthenticationServiceException.UserNotFound;
 import org.vrajpatel.userauthservice.Repository.UserRepository;
+import org.vrajpatel.userauthservice.ResponseDTO.AccessTokenResponse;
 import org.vrajpatel.userauthservice.ResponseDTO.AuthResponse;
 import org.vrajpatel.userauthservice.model.AuthProvider;
 import org.vrajpatel.userauthservice.model.User;
 import org.vrajpatel.userauthservice.model.UserTokens;
+import org.vrajpatel.userauthservice.requestDTO.JwtDto;
 import org.vrajpatel.userauthservice.requestDTO.RegisterUserDto;
 import org.vrajpatel.userauthservice.requestDTO.UserDTO;
 import org.vrajpatel.userauthservice.utils.JwtUtils.TokenProvider;
@@ -51,6 +54,9 @@ public class AuthService {
     @Autowired
     private RefreshToken refreshToken;
 
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
 
     @Autowired
@@ -129,6 +135,44 @@ public class AuthService {
         }
         catch (Exception e) {
             throw new InternalServerError("Something went wrong");
+        }
+    }
+
+
+    public ResponseEntity<AccessTokenResponse> getNewAccessToken(@Valid JwtDto jwtDto) {
+        if(StringUtils.hasText(jwtDto.getJwt())){
+            if(stringRedisTemplate.hasKey("refresh_token : "+jwtDto.getJwt()) && tokenProvider.validateRefreshToken(jwtDto.getJwt()) ){
+                String email=stringRedisTemplate.opsForValue().get("refresh_token : "+jwtDto.getJwt());
+
+                if(email != null){
+                    Optional<User> user=userRepository.findByEmail(email.toLowerCase());
+                    if(user.isPresent()){
+                        UserPrincipal userPrincipal=UserPrincipal.create(user.get());
+                        Authentication authentication=new UsernamePasswordAuthenticationToken(userPrincipal,new ArrayList<>());
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                        String accessToken= tokenProvider.createJWT(authentication);
+
+                        AccessTokenResponse accessTokenResponse=new AccessTokenResponse();
+                        accessTokenResponse.setAccessToken(accessToken);
+                        accessTokenResponse.setUserEmail(user.get().getEmail());
+                        accessTokenResponse.setUserId(user.get().getUserId().toString());
+                        return new ResponseEntity<>(accessTokenResponse, HttpStatus.OK);
+
+                    }
+                    else{
+                        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                    }
+                }
+                else{
+                    return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+                }
+            }
+            else{
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
+        }
+        else{
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
     }
 }
