@@ -1,178 +1,125 @@
 package org.vrajpatel.userauthservice.service;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
-import jakarta.ws.rs.InternalServerErrorException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationServiceException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.token.TokenService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.vrajpatel.userauthservice.Exception.AuthenticationServiceException.InternalServerError;
+import org.vrajpatel.userauthservice.Exception.AuthenticationServiceException.UnAuthorizedException;
 import org.vrajpatel.userauthservice.Exception.AuthenticationServiceException.UserExistException;
 import org.vrajpatel.userauthservice.Exception.AuthenticationServiceException.UserNotFound;
+
 import org.vrajpatel.userauthservice.Repository.UserRepository;
-import org.vrajpatel.userauthservice.ResponseDTO.AccessTokenResponse;
-import org.vrajpatel.userauthservice.ResponseDTO.AuthResponse;
+import org.vrajpatel.userauthservice.ResponseDTO.LoginResponseDTO;
 import org.vrajpatel.userauthservice.model.AuthProvider;
 import org.vrajpatel.userauthservice.model.User;
-import org.vrajpatel.userauthservice.model.UserTokens;
-import org.vrajpatel.userauthservice.requestDTO.JwtDto;
 import org.vrajpatel.userauthservice.requestDTO.RegisterUserDto;
 import org.vrajpatel.userauthservice.requestDTO.UserDTO;
 import org.vrajpatel.userauthservice.utils.JwtUtils.TokenProvider;
 import org.vrajpatel.userauthservice.utils.RefreshToken;
-import org.vrajpatel.userauthservice.utils.SetCookies;
-import org.vrajpatel.userauthservice.utils.UserPrincipal;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 @Service
 public class AuthService {
 
-    private Logger logger = LoggerFactory.getLogger(AuthService.class);
+    private final UserRepository userRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final RefreshToken refreshToken;
 
-    @Autowired
-    private RefreshToken refreshToken;
+    private final StringRedisTemplate stringRedisTemplate;
 
+    private final TokenProvider tokenProvider;
 
-    @Autowired
-    private StringRedisTemplate stringRedisTemplate;
+    private final PasswordEncoder passwordEncoder;
 
+    AuthService(UserRepository userRepository, RefreshToken refreshToken, StringRedisTemplate stringRedisTemplate,
+                TokenProvider tokenProvider, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.refreshToken = refreshToken;
+        this.stringRedisTemplate = stringRedisTemplate;
+        this.tokenProvider = tokenProvider;
+        this.passwordEncoder = passwordEncoder;
 
-    @Autowired
-    private TokenProvider tokenProvider;
-
-    @Value("${domain}")
-    private String domain;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    public ResponseEntity<AuthResponse> loginService(@Valid UserDTO userDTO) throws  UserNotFound {
-        try{
-            Optional<User> user=userRepository.findByEmail(userDTO.getEmail().toLowerCase());
-            if(user.isPresent()){
-                if(passwordEncoder.matches(userDTO.getPassword(), user.get().getPassword())){
-                    UserPrincipal userPrincipal=UserPrincipal.create(user.get());
-                    Authentication authentication=new UsernamePasswordAuthenticationToken(userPrincipal,new ArrayList<>());
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                    String accessToken= tokenProvider.createJWT(authentication);
-                    String refreshTokenKey= tokenProvider.createRefreshToken(authentication);
-
-                    refreshToken.setRefreshToken(refreshTokenKey,user.get().getEmail());
-
-                    AuthResponse authResponse=new AuthResponse();
-                    authResponse.setStatus(true);
-                    authResponse.setMessage("Login successful");
-                    return ResponseEntity.ok().headers(SetCookies.setCookies(new HttpHeaders(),accessToken,refreshTokenKey)).body(authResponse);
-                }
-                else{
-                    AuthResponse authResponse=new AuthResponse();
-                    authResponse.setStatus(false);
-                    authResponse.setMessage("Sorry, wrong password");
-                    return new ResponseEntity<>(authResponse, HttpStatus.UNAUTHORIZED);
-                }
-            }
-            else{
-                throw new UserNotFound("User Not Yet Registered");
-            }
-        } catch (Exception e) {
-            throw new InternalServerError("Something went wrong"+ e.getMessage());
-        }
     }
 
-    public ResponseEntity<AuthResponse> registerService(RegisterUserDto userDTO) throws UserExistException {
-        try {
-            boolean isUser = userRepository.existsByEmail(userDTO.getEmail().toLowerCase());
-            if (isUser) {
-                throw new UserExistException("Email Is Already Registered");
+    @Transactional
+    public LoginResponseDTO loginService(@Valid UserDTO userDTO) throws UserNotFound, UnAuthorizedException {
+        Optional<User> user = userRepository.findByEmail(userDTO.getEmail().toLowerCase());
+        if (user.isPresent()) {
+            if (passwordEncoder.matches(userDTO.getPassword(), user.get().getPassword())) {
+
+                String accessToken = tokenProvider.generateToken('A', user.get().getUserId().toString());
+                String refreshTokenKey = tokenProvider.generateToken('R', user.get().getUserId().toString());
+                refreshToken.setRefreshToken(refreshTokenKey, user.get().getEmail());
+                return new LoginResponseDTO(accessToken, refreshTokenKey);
             } else {
-                User user = new User();
-                user.setEmail(userDTO.getEmail().toLowerCase());
-                user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
-                user.setFirstName(userDTO.getFirstName());
-
-                user.setCreatedAt(new Date());
-                user.setAuthProvider(AuthProvider.usernamepassword);
-                userRepository.save(user);
-
-                UserPrincipal userPrincipal = UserPrincipal.create(user);
-                Authentication authentication = new UsernamePasswordAuthenticationToken(userPrincipal, new ArrayList<>());
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                String accessToken= tokenProvider.createJWT(authentication);
-                String refreshTokenKey= tokenProvider.createRefreshToken(authentication);
-                refreshToken.setRefreshToken(refreshTokenKey,user.getEmail());
-                AuthResponse authResponse = new AuthResponse();
-                authResponse.setStatus(true);
-                authResponse.setMessage("User Registration successful");
-                return ResponseEntity.ok().headers(SetCookies.setCookies(new HttpHeaders(),accessToken,refreshTokenKey)).body(authResponse);
-
+                throw new UnAuthorizedException("Unauthorized Access, Password is wrong");
             }
+        } else {
+            throw new UserNotFound("User Not Yet Registered");
         }
-        catch (UserExistException e) {
-            throw new UserExistException(e.getMessage());
-        }
-        catch (Exception e) {
-            throw new InternalServerError("Something went wrong");
+
+    }
+
+    @Transactional
+    public LoginResponseDTO registerService(RegisterUserDto userDTO) throws UserExistException {
+
+        boolean isUser = userRepository.existsByEmail(userDTO.getEmail().toLowerCase());
+        if (isUser) {
+            throw new UserExistException("Email Is Already Registered");
+        } else {
+            User user = new User();
+            user.setEmail(userDTO.getEmail().toLowerCase());
+            user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+            user.setFirstName(userDTO.getFirstName());
+
+            user.setCreatedAt(new Date());
+            user.setAuthProvider(AuthProvider.usernamepassword);
+            userRepository.save(user);
+            String accessToken = tokenProvider.generateToken('A', user.getUserId().toString());
+            String refreshTokenKey = tokenProvider.generateToken('R', user.getUserId().toString());
+            refreshToken.setRefreshToken(refreshTokenKey, user.getEmail());
+            return new LoginResponseDTO(accessToken, refreshTokenKey);
         }
     }
 
+    public String getNewAccessToken(String refreshToken) throws UserNotFound, UnAuthorizedException {
+            if (StringUtils.hasText(refreshToken) && stringRedisTemplate.hasKey("refresh_token : " + refreshToken) && tokenProvider.validateRefreshToken(refreshToken)) {
+                String email = stringRedisTemplate.opsForValue().get("refresh_token : " + refreshToken);
+                if (email != null) {
+                    Optional<User> user = userRepository.findByEmail(email.toLowerCase());
+                    if (user.isPresent()) {
 
-    public ResponseEntity<AccessTokenResponse> getNewAccessToken(@Valid JwtDto jwtDto) {
-        if(StringUtils.hasText(jwtDto.getJwt())){
-            if(stringRedisTemplate.hasKey("refresh_token : "+jwtDto.getJwt()) && tokenProvider.validateRefreshToken(jwtDto.getJwt()) ){
-                String email=stringRedisTemplate.opsForValue().get("refresh_token : "+jwtDto.getJwt());
-
-                if(email != null){
-                    Optional<User> user=userRepository.findByEmail(email.toLowerCase());
-                    if(user.isPresent()){
-                        UserPrincipal userPrincipal=UserPrincipal.create(user.get());
-                        Authentication authentication=new UsernamePasswordAuthenticationToken(userPrincipal,new ArrayList<>());
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
-                        String accessToken= tokenProvider.createJWT(authentication);
-
-                        AccessTokenResponse accessTokenResponse=new AccessTokenResponse();
-                        accessTokenResponse.setAccessToken(accessToken);
-                        accessTokenResponse.setUserEmail(user.get().getEmail());
-                        accessTokenResponse.setUserId(user.get().getUserId().toString());
-                        return new ResponseEntity<>(accessTokenResponse, HttpStatus.OK);
-
+                        return tokenProvider.generateToken('A', user.get().getUserId().toString());
+                    } else {
+                        throw new UserNotFound("User Not Found");
                     }
-                    else{
-                        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-                    }
+                } else {
+                   throw new UnAuthorizedException("Not Authorized. Email Not found");
                 }
-                else{
-                    return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-                }
+            } else {
+                throw new UnAuthorizedException("Not Authorized. Refresh Token Empty or not Valid");
             }
-            else{
-                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-            }
+    }
+
+//    }
+
+    public Boolean validate(String accessToken) throws UnAuthorizedException, ExpiredJwtException {
+        if (StringUtils.hasText(accessToken)) {
+            return tokenProvider.validateToken(accessToken);
         }
         else{
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            throw new UnAuthorizedException("Unauthorized Access");
         }
     }
 }
+
+
+
+
+

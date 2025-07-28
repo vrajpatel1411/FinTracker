@@ -12,7 +12,7 @@ public class SetCookies {
     @Value("${domain}")
     private static String domain;
 
-    public static HttpHeaders setCookies(HttpHeaders headers, String accessToken, String refreshToken){
+    public static String getAccessCookie(String accessToken) {
         ResponseCookie cookie=ResponseCookie.from("accessToken",accessToken)
                 .httpOnly(true)
                 .maxAge(300)
@@ -21,7 +21,11 @@ public class SetCookies {
                 .secure(true)
                 .path("/")
                 .build();
-        ResponseCookie cookie2=ResponseCookie.from("refreshToken",refreshToken)
+        return cookie.toString();
+    }
+
+    public static String getRefreshToken(String refreshToken) {
+        ResponseCookie cookie=ResponseCookie.from("refreshToken",refreshToken)
                 .httpOnly(true)
                 .maxAge(10*24*60*60)
                 .sameSite("None")
@@ -29,9 +33,12 @@ public class SetCookies {
                 .secure(true)
                 .path("/")
                 .build();
+        return cookie.toString();
+    }
+    public static HttpHeaders setCookies(HttpHeaders headers, String accessToken, String refreshToken){
 
-        headers.add("Set-Cookie",cookie.toString());
-        headers.add("Set-Cookie",cookie2.toString());
+        headers.add("Set-Cookie",getAccessCookie(accessToken));
+        headers.add("Set-Cookie",getRefreshToken(refreshToken));
 
         return headers;
     }

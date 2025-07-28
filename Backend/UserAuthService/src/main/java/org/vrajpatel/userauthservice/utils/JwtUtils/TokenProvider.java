@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.vrajpatel.userauthservice.Exception.BadRequestException;
+import org.vrajpatel.userauthservice.model.User;
 import org.vrajpatel.userauthservice.utils.UserPrincipal;
 import org.vrajpatel.userauthservice.utils.config.AppProperties;
 
@@ -32,41 +33,26 @@ public class TokenProvider {
         this.refreshKey=Keys.hmacShaKeyFor(appProperties.getAuth().getRefreshTokenSecret().getBytes(StandardCharsets.UTF_8));
     }
 
-    public String createJWT(Authentication authentication) {
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-
-        if (userPrincipal == null) {
-            return null;
-        }
-
+    public String generateToken(char tokenType,String userId) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + appProperties.getAuth().getTokenExpirationMsec());
+        Date expiryDate = new Date(now.getTime() + ((tokenType == 'A')?appProperties.getAuth().getTokenExpirationMsec():appProperties.getAuth().getRefreshTokenExpirationMsec()));
 
         return Jwts.builder()
-                .setSubject(userPrincipal.getId().toString())
-                .claim("id", userPrincipal.getId().toString())
+                .setSubject(userId)
+                .claim("id", userId)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(accesskey, SignatureAlgorithm.HS256) // 🔐 No deprecation warning
+                .signWith(((tokenType == 'A' ? accesskey : refreshKey)), SignatureAlgorithm.HS256) // 🔐 No deprecation warning
                 .compact();
     }
 
-    public String createRefreshToken(Authentication authentication) {
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-        if (userPrincipal == null) {
+    public String createJWT(char tokenType,UserPrincipal user) {
+
+        if (user == null) {
             return null;
         }
 
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + appProperties.getAuth().getRefreshTokenExpirationMsec());
-
-        return Jwts.builder()
-                .setSubject(userPrincipal.getId().toString())
-                .claim("id", userPrincipal.getId().toString())
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(refreshKey, SignatureAlgorithm.HS256)
-                .compact();
+       return generateToken(tokenType,user.getId().toString());
     }
 
     public UUID getUserIdFromJWT(String jwt) {
@@ -75,33 +61,26 @@ public class TokenProvider {
                 .build()
                 .parseClaimsJws(jwt)
                 .getBody();
-
+        logger.info(claims.toString());
+        logger.info(claims.getSubject());
         return UUID.fromString(claims.getSubject());
     }
 
     public boolean validateRefreshToken(String refreshToken) {
-        try{
-            Jwts.parserBuilder().setSigningKey(refreshKey).build().parseClaimsJws(refreshToken);
-            return true;
-        }
-        catch (Exception e){
-            throw new BadRequestException("Invalid refresh token");
-        }
+        Jwts.parserBuilder().setSigningKey(refreshKey).build().parseClaimsJws(refreshToken);
+        return true;
     }
 
     public boolean validateToken(String authToken) {
         try {
             Jwts.parserBuilder().setSigningKey(accesskey).build().parseClaimsJws(authToken);
-            return true;
+
         } catch (SignatureException ex) {
             logger.error("Invalid JWT signature");
             throw new BadRequestException("Invalid JWT signature");
         } catch (MalformedJwtException ex) {
             logger.error("Invalid JWT token");
             throw new BadRequestException("Invalid JWT token");
-        } catch (ExpiredJwtException ex) {
-            logger.error("Expired JWT token");
-            throw new BadRequestException("Expired JWT token");
         } catch (UnsupportedJwtException ex) {
             logger.error("Unsupported JWT token");
             throw new BadRequestException("Unsupported JWT token");
@@ -109,5 +88,6 @@ public class TokenProvider {
             logger.error("JWT claims string is empty");
             throw new BadRequestException("JWT claims string is empty");
         }
+        return true;
     }
 }

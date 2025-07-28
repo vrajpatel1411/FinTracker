@@ -18,6 +18,7 @@ import org.vrajpatel.userauthservice.Exception.BadRequestException;
 import org.vrajpatel.userauthservice.utils.CookiesUtil;
 import org.vrajpatel.userauthservice.utils.HttpCookieOauth2;
 import org.vrajpatel.userauthservice.utils.JwtUtils.TokenProvider;
+import org.vrajpatel.userauthservice.utils.UserPrincipal;
 import org.vrajpatel.userauthservice.utils.config.AppProperties;
 
 import java.io.IOException;
@@ -52,13 +53,15 @@ public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             return;
         }
 
-        String token=null;
+        String accessToken=null;
+        String refreshToken=null;
         if(!targetUrl.isEmpty()){
-            token= tokenProvider.createJWT(authentication);
+            accessToken= tokenProvider.createJWT('A',(UserPrincipal) authentication.getPrincipal());
+            refreshToken=tokenProvider.createJWT('R',(UserPrincipal) authentication.getPrincipal());
         }
 
-        if(token!=null){
-            ResponseCookie cookie=ResponseCookie.from("jwttoken",token) .httpOnly(true)
+        if(accessToken!=null && refreshToken!=null){
+            ResponseCookie cookie=ResponseCookie.from("accessToken",accessToken) .httpOnly(true)
                     .maxAge(3600)
                     .sameSite("None")
                     .domain(domain)
@@ -66,7 +69,15 @@ public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                     .path("/")
                     .build();
 
+            ResponseCookie cookie2=ResponseCookie.from("refreshToken",refreshToken) .httpOnly(true)
+                    .maxAge(3600)
+                    .sameSite("None")
+                    .domain(domain)
+                    .secure(true)
+                    .path("/")
+                    .build();
             response.addHeader(HttpHeaders.SET_COOKIE,cookie.toString());
+            response.addHeader(HttpHeaders.SET_COOKIE,cookie2.toString());
         }
 
         clearAuthenticationAttributes(request);
