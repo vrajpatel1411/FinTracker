@@ -1,9 +1,9 @@
 import {  createSlice } from "@reduxjs/toolkit";
 import AuthState from "../../Types/AuthState";
-import loginUser  from "../Reducers/loginUser";
-import registerUser  from "../Reducers/registerUser";
-import Oauth2Success from "../Reducers/Oauth2Success";
-import validateUser from "../Reducers/validateUser";
+import loginUser  from "../auth/Reducers/loginUser";
+import registerUser  from "../auth/Reducers/registerUser";
+import Oauth2Success from "../auth/Reducers/Oauth2Success";
+import validateUser from "../auth/Reducers/validateUser";
 
 
 const initialState: AuthState = {
@@ -19,6 +19,7 @@ export const authSlice = createSlice({
         
     },
    extraReducers: (builder) => {
+    
     // REGISTER
     builder.addCase(registerUser.fulfilled, (state, action) => {
       if (action.payload?.status === true) {
@@ -58,16 +59,16 @@ export const authSlice = createSlice({
     // VALIDATE
     builder.addCase(validateUser.fulfilled, (state) => {
       state.isAuthenticated = true;
-      state.isError = false;
-      state.message = '';
+      
     });
-    builder.addCase(validateUser.rejected, (state,) => {
+    builder.addCase(validateUser.rejected, (state) => {
       state.isAuthenticated = false;
-     
+      
     });
 
     // OAUTH
     builder.addCase(Oauth2Success.fulfilled, (state, action) => {
+      console.log("Oauth2Success action payload:", action.payload);
       if (action.payload) {
         state.isAuthenticated = true;
         state.isError = false;

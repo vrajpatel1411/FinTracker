@@ -8,67 +8,30 @@ import FormControl from '@mui/material/FormControl';
 import Link from '@mui/material/Link';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import Stack from '@mui/material/Stack';
-import MuiCard from '@mui/material/Card';
-import { styled } from '@mui/material/styles';
+
 import { ValidateEmail, ValidateName, ValidatePassword } from '../Utils/ValidateInputs';
-import { FacebookIcon, GithubIcon, GoogleIcon } from '../Utils/CustomIcons';
-import { IconButton} from '@mui/material';
-import HandleOauthLogin from '../Utils/HandleOauthLogin';
 import { useNavigate, useSearchParams } from 'react-router';
 
 import Modal from '../Utils/Modal';
 import User from '../Types/User';
-import registerUser  from '../Redux/Reducers/registerUser';
+import registerUser  from '../Component/auth/Reducers/registerUser';
 import { useSelector } from 'react-redux';
 import { RootState } from '../Redux/Store';
-import validateUser from '../Redux/Reducers/validateUser';
-import { AxiosError } from 'axios';
+import validateUser from '../Component/auth/Reducers/validateUser';
+
 import { useAppDispatch } from '../Redux/hooks';
 
-const Card = styled(MuiCard)(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  alignSelf: 'center',
-  width: '100%',
-  padding: theme.spacing(3),
-  gap: theme.spacing(1),
-  margin: 'auto',
-  boxShadow:
-    'hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px',
-  [theme.breakpoints.up('sm')]: {
-    width: '450px',
-  },
-  ...theme.applyStyles('dark', {
-    boxShadow:
-      'hsla(220, 30%, 5%, 0.5) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px',
-  }),
-}));
+const Card = React.lazy(() => import('../styles/card'));
+const SignUpContainer = React.lazy(() => import('../styles/SignUpContainer'));
 
-const SignUpContainer = styled(Stack)(({ theme }) => ({
-  height: 'calc((1 - var(--template-frame-height, 0)) * 100dvh)',
-  minHeight: '100%',
-  padding: theme.spacing(1),
-  [theme.breakpoints.up('sm')]: {
-    padding: theme.spacing(2),
-  },
-  '&::before': {
-    content: '""',
-    display: 'block',
-    position: 'absolute',
-    zIndex: -1,
-    inset: 0,
-    backgroundImage:
-      'radial-gradient(ellipse at 50% 50%, hsl(210, 100%, 97%), hsl(0, 0%, 100%))',
-    backgroundRepeat: 'no-repeat',
-    ...theme.applyStyles('dark', {
-      backgroundImage:
-        'radial-gradient(at 50% 50%, hsla(210, 100%, 16%, 0.5), hsl(220, 30%, 5%))',
-    }),
-  },
-}));
+// import SocialMediaButtons from '../Component/auth/SocialMediaButtons';
+import { AxiosError } from 'axios';
+const SocialMediaButtons = React.lazy(() => import('../Component/auth/SocialMediaButtons'));
+
+
 
 const RegisterUser = () => {
+
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
   const [passwordError, setPasswordError] = React.useState(false);
@@ -81,22 +44,25 @@ const RegisterUser = () => {
   const [queryParameter]=useSearchParams()
   const [modal, setModal] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [isLoading, setLoading] = React.useState(false);
+
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const {message,isError}=useSelector((state:RootState)=>state.authReducer)
   const hasValidatedRef = React.useRef(false);
 
-React.useEffect(() => {
-  if (hasValidatedRef.current) return;
-  hasValidatedRef.current = true;
+  // check if user is already validated
+  React.useEffect(() => {
+    if (hasValidatedRef.current) return; // Ref is used to prevent multiple validations
+    hasValidatedRef.current = true;
 
-  dispatch(validateUser())
-    .unwrap()
-    .then(() => navigate("/home"))
-    .catch(() => {
-      // Stay on register page
-    });
-}, [dispatch, navigate]);
+    dispatch(validateUser())
+      .unwrap()
+      .then(() => navigate("/home"))
+      .catch(() => {
+        // Stay on register page
+      });
+  }, [dispatch, navigate]);
 
   React.useEffect(()=>{
     const error=queryParameter.get('error');
@@ -134,30 +100,27 @@ React.useEffect(() => {
           email: data.get('email') as string,
           password: data.get('password') as string,
         };
-        console.log(user);
-        dispatch(registerUser(user)).unwrap()
-    .then((res:{
-      status: boolean;
-      message: string;
-    }) => {
-     
-      if (res.status === true) {
-        navigate("/home");
-      }
-    })
-    .catch((err:AxiosError) => {
-      // Optional: handle rejected promise (network error, etc.)
-      console.error("Register failed:", err);
-    });
+        setLoading(true);
+        dispatch(registerUser(user))
+          .unwrap()
+          .then((res:{
+            status: boolean;
+            message: string;
+          }) => {
+            setLoading(false);
+            if (res.status === true) {
+              navigate("/home");
+            }
+            })
+          .catch((err: AxiosError) => {
+            setLoading(false);
+            console.error("Register failed:", err);
+          });
     }
-
-  
     if(isError){
       setModal(true)
       setError(message)
     }
-    
-    
     event.preventDefault();
   };
 
@@ -166,7 +129,7 @@ React.useEffect(() => {
     <div>
       {
             modal && <Modal error={error} setModal={setModal} />
-        }
+      }
        
       <CssBaseline enableColorScheme />
       <SignUpContainer direction="column" justifyContent="space-between">
@@ -254,7 +217,7 @@ React.useEffect(() => {
               type="submit"
               fullWidth
               variant="contained"
-                disabled={!isValid || nameError || emailError || passwordError}
+              disabled={!isValid || nameError || emailError || passwordError || isLoading}
             >
               Sign up
             </Button>
@@ -263,11 +226,9 @@ React.useEffect(() => {
           <Divider>
             <Typography sx={{ color: 'text.secondary' }}>or</Typography>
           </Divider>
-          <Box sx={{ display: 'flex', justifyContent:"center", alignItems:"center", flexDirection: 'row', gap: 2 }}>
-            <IconButton   onClick={()=>HandleOauthLogin("google")}><GoogleIcon /></IconButton>
-            <IconButton   onClick={()=>HandleOauthLogin("facebook")}><FacebookIcon /></IconButton>
-            <IconButton onClick={()=>HandleOauthLogin("github")}><GithubIcon /></IconButton>
-            </Box>
+          <React.Suspense fallback={<div>Loading Social Media Buttons...</div>}>
+            <SocialMediaButtons />
+          </React.Suspense>
             
             <Typography sx={{ textAlign: 'center' }}>
               Already have an account?{' '}

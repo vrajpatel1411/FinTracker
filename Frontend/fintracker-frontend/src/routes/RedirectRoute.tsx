@@ -9,7 +9,7 @@ const RedirectRoute = () => {
     },)
 
   return (
-    <div>RedirectRoute</div>
+    <div>Redirecting to Register Page ... </div>
   )
 }
 
