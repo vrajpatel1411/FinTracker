@@ -79,6 +79,9 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
                         .flatMap(response ->
                                 {
                                     if (response.getAccessToken() != null) {
+                                        logger.info("JWT Token found: " + response.getAccessToken());
+                                        logger.info("User Email"+ response.getUserEmail());
+                                        logger.info("User Id"+ response.getUserId());
                                         ServerHttpRequest mutatedRequest = exchange.getRequest()
                                                 .mutate()
                                                 .header("userEmail", response.getUserEmail())
@@ -105,8 +108,8 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
                         )
                         .onErrorResume(Exception.class, e -> {
                             logger.error("Error validating JWT: {}", e.getMessage());
-                            return Mono.error(new ResponseStatusException(
-                                    HttpStatus.BAD_GATEWAY,
+                            return Mono.error(new BadException(
+
                                     "Error validating JWT: " + e.getMessage()
                             ));
                         }).then();
@@ -124,7 +127,6 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
                     .bodyToMono(ValidationResponseDto.class)
                     .flatMap(response -> {
                         if (response.isValid()) {
-                            logger.info("JWT is valid. User ID: {}, Email: {}", response.getUserId(), response.getUserEmail());
                             ServerHttpRequest mutatedRequest = exchange.getRequest()
                                     .mutate()
                                     .header("userEmail", response.getUserEmail())
