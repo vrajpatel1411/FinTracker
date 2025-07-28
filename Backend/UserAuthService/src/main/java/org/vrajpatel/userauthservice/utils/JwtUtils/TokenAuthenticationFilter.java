@@ -81,20 +81,27 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
                 }
                 else{
-                    throw new CustomAuthenticationError("User Not Found Using JWT Token");
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter().write("User Not Found Using JWT Token");
+//                    throw new RuntimeException("User Not Found Using JWT Token");
                 }
             }
             else{
                 logger.error("Error with validating the token");
-                throw new BadRequestException("Sorry Something wrong with the token");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write(" Error: Sorry either token is null or has expired");
+//                throw new RuntimeException("Sorry Something wrong with the token");
             }
+            filterChain.doFilter(request, response);
         }
         catch(Exception e){
             logger.error("Could not set user authentication in security context", e);
-            throw new BadRequestException(e.getMessage());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
         }
-
-        filterChain.doFilter(request, response);
     }
 
 

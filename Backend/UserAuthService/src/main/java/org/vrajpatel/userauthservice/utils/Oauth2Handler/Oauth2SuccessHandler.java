@@ -83,7 +83,7 @@ public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         clearAuthenticationAttributes(request);
         UriComponentsBuilder builder = UriComponentsBuilder
                 .fromUriString(targetUrl)
-                .queryParam("success", "true");
+                .queryParam("status", true);
         targetUrl = builder.toUriString();
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
 

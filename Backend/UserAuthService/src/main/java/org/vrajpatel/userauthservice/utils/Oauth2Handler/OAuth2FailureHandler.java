@@ -29,7 +29,7 @@ public class OAuth2FailureHandler extends SimpleUrlAuthenticationFailureHandler 
                 .orElse(("/"));
 
         targetUrl = UriComponentsBuilder.fromUriString(targetUrl)
-                .queryParam("success", "false")
+                .queryParam("status", false)
                 .queryParam("error", exception.getMessage())
                 .build().toUriString();
 
