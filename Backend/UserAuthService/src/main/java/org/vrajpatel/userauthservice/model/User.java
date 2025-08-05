@@ -36,6 +36,10 @@ public class User {
     @Column
     private String password;
 
+    @Column(name="isemailverified")
+    private boolean isEmailVerified;
+
+
     @Enumerated(EnumType.STRING)
     private AuthProvider authProvider;
 

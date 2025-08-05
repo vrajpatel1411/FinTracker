@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 
 import org.slf4j.Logger;
@@ -19,6 +20,8 @@ import org.vrajpatel.userauthservice.Exception.AuthenticationServiceException.Us
 import org.vrajpatel.userauthservice.Exception.AuthenticationServiceException.UserNotFound;
 
 import org.vrajpatel.userauthservice.Exception.BadRequestException;
+import org.vrajpatel.userauthservice.Exception.EmptyAccessTokenException;
+import org.vrajpatel.userauthservice.Exception.OTPException;
 import org.vrajpatel.userauthservice.ResponseDTO.AccessTokenResponse;
 import org.vrajpatel.userauthservice.ResponseDTO.AuthResponse;
 import org.vrajpatel.userauthservice.ResponseDTO.LoginResponseDTO;
@@ -26,6 +29,7 @@ import org.vrajpatel.userauthservice.ResponseDTO.ValidationResponseDto;
 
 import org.vrajpatel.userauthservice.model.User;
 import org.vrajpatel.userauthservice.requestDTO.JwtDto;
+import org.vrajpatel.userauthservice.requestDTO.OtpDto;
 import org.vrajpatel.userauthservice.requestDTO.RegisterUserDto;
 import org.vrajpatel.userauthservice.requestDTO.UserDTO;
 import org.vrajpatel.userauthservice.service.AuthService;
@@ -89,13 +93,23 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody UserDTO userDTO) {
         AuthResponse authResponse=new AuthResponse();
-        try {
-            LoginResponseDTO response=authService.loginService(userDTO);
-            authResponse.setStatus(true);
-            authResponse.setMessage("Successfully logged in");
-            return ResponseEntity.ok().headers(SetCookies.setCookies(new HttpHeaders(),response.getAccessToken(),response.getRefreshToken())).body(authResponse);
 
-        }catch (UserNotFound ex){
+        try{
+            LoginResponseDTO response=authService.loginService(userDTO);
+            if(response.isEmailVerified()){
+                authResponse.setStatus(true);
+                authResponse.setMessage("Successfully logged in");
+                return ResponseEntity.ok().headers(SetCookies.setCookies(new HttpHeaders(),response.getAccessToken(),response.getRefreshToken())).body(authResponse);
+            }
+            else{
+                authResponse.setStatus(false);
+                authResponse.setMessage("Email needs to be verified");
+                authResponse.setNeedEmailVerification(true);
+                authResponse.setEmail(response.getEmail());
+                return ResponseEntity.ok().body(authResponse);
+            }
+        }
+        catch (UserNotFound ex){
             authResponse.setStatus(false);
             authResponse.setMessage("User not found");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(authResponse);
@@ -108,6 +122,25 @@ public class AuthController {
             authResponse.setMessage("Internal Server Error");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(authResponse);
         }
+//        try {
+//            LoginResponseDTO response=authService.loginService(userDTO);
+//            authResponse.setStatus(true);
+//            authResponse.setMessage("Successfully logged in");
+//            return ResponseEntity.ok().headers(SetCookies.setCookies(new HttpHeaders(),response.getAccessToken(),response.getRefreshToken())).body(authResponse);
+//
+//        }catch (UserNotFound ex){
+//            authResponse.setStatus(false);
+//            authResponse.setMessage("User not found");
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(authResponse);
+//        }catch (UnAuthorizedException ex){
+//            authResponse.setStatus(false);
+//            authResponse.setMessage("Unauthorized, Wrong Password");
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(authResponse);
+//        }catch (Exception e){
+//            authResponse.setStatus(false);
+//            authResponse.setMessage("Internal Server Error");
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(authResponse);
+//        }
     }
 
     @Operation(summary = "Registering a new User" , description="Register New User based on information provided and sent back jwt token if successfull")
@@ -125,9 +158,18 @@ public class AuthController {
         AuthResponse authResponse=new AuthResponse();
         try{
             LoginResponseDTO response=authService.registerService(userDTO);
-            authResponse.setStatus(true);
-            authResponse.setMessage("Registration Successfull");
-            return ResponseEntity.ok().headers(SetCookies.setCookies(new HttpHeaders(),response.getAccessToken(),response.getRefreshToken())).body(authResponse);
+            if(response.isEmailVerified()){
+                authResponse.setStatus(true);
+                authResponse.setMessage("Successfully Registered");
+                return ResponseEntity.ok().headers(SetCookies.setCookies(new HttpHeaders(),response.getAccessToken(),response.getRefreshToken())).body(authResponse);
+            }
+            else{
+                authResponse.setStatus(false);
+                authResponse.setNeedEmailVerification(true);
+                authResponse.setMessage("Email needs to be verified");
+                authResponse.setEmail(response.getEmail());
+                return ResponseEntity.ok().body(authResponse);
+            }
         }
         catch (UserExistException ex){
             authResponse.setStatus(false);
@@ -159,10 +201,13 @@ public class AuthController {
                     content = @Content(schema = @Schema(implementation = ValidationResponseDto.class)))
     })
     @GetMapping("/validate")
-    public ResponseEntity<ValidationResponseDto> validateUser(@CookieValue("accessToken") String accessToken, @CookieValue("refreshToken") String refreshToken) {
+    public ResponseEntity<ValidationResponseDto> validateUser(@CookieValue("accessToken") @Nullable  String accessToken, @CookieValue("refreshToken") String refreshToken) throws ExpiredJwtException {
         // Update according to the RefreshToken and AccessToken
         ValidationResponseDto validationResponseDto=new ValidationResponseDto();
         try {
+            if(accessToken==null){
+                throw new EmptyAccessTokenException();
+            }
             Boolean isValid=authService.validate(accessToken);
             if(isValid){
                 validationResponseDto.setValid(true);
@@ -174,13 +219,13 @@ public class AuthController {
                 validationResponseDto.setMessage("Invalid access token");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponseDto);
             }
-        }catch (ExpiredJwtException ex){
+        }catch (EmptyAccessTokenException | ExpiredJwtException ex){
             try{
                 String newAccessToken=authService.getNewAccessToken(refreshToken);
                 validationResponseDto.setValid(true);
                 validationResponseDto.setMessage("Successfully logged in");
                 String cookie=SetCookies.getAccessCookie(newAccessToken);
-                return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE,"accessToken",cookie).body(validationResponseDto);
+                return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE,cookie).body(validationResponseDto);
 
             }catch (UserNotFound e){
                 validationResponseDto.setValid(false);
@@ -275,6 +320,64 @@ public class AuthController {
 
         }catch (Exception e){
             throw new BadRequestException(e.getMessage());
+        }
+    }
+
+    @PostMapping("/verifyOtp")
+    public ResponseEntity<AuthResponse> verifyOTp(@Valid @RequestBody OtpDto otp){
+        try{
+            logger.warn(otp.toString());
+            AuthResponse authResponse=new AuthResponse();
+            LoginResponseDTO loginResponseDTO=authService.verifyOTP(otp);
+            if(loginResponseDTO.isEmailVerified()){
+                authResponse.setStatus(true);
+                authResponse.setMessage("Successfully logged in");
+                return ResponseEntity.ok().headers(SetCookies.setCookies(new HttpHeaders(),loginResponseDTO.getAccessToken(),loginResponseDTO.getRefreshToken())).body(authResponse);
+            }
+            else{
+                authResponse.setStatus(false);
+                authResponse.setMessage("Unauthorized request");
+                return ResponseEntity.badRequest().body(authResponse);
+            }
+        }catch (OTPException e){
+            AuthResponse authResponse=new AuthResponse();
+            authResponse.setEmail(otp.getUserEmail());
+            authResponse.setStatus(false);
+            authResponse.setMessage("OTP verification failed");
+            return ResponseEntity.ok().body(authResponse);
+
+        }catch (Exception e){
+            AuthResponse authResponse=new AuthResponse();
+            authResponse.setStatus(false);
+            authResponse.setMessage(e.getMessage());
+            return ResponseEntity.badRequest().body(authResponse);
+        }
+    }
+
+    @GetMapping("/resendOtp")
+    public ResponseEntity<AuthResponse> resendOTP(@RequestParam("email") String email){
+        try{
+            boolean res=authService.sendOTP(email);
+            if(res){
+                AuthResponse authResponse=new AuthResponse();
+                authResponse.setEmail(email);
+                authResponse.setStatus(true);
+                return ResponseEntity.ok().body(authResponse);
+            }
+            else{
+                AuthResponse authResponse=new AuthResponse();
+                authResponse.setEmail(email);
+                authResponse.setStatus(false);
+                authResponse.setMessage("Failed to send OTP");
+                return ResponseEntity.badRequest().body(authResponse);
+            }
+        }
+        catch(Exception e){
+            AuthResponse authResponse=new AuthResponse();
+            authResponse.setEmail(email);
+            authResponse.setStatus(false);
+            authResponse.setMessage("Failed to send OTP");
+            return ResponseEntity.badRequest().body(authResponse);
         }
     }
 }

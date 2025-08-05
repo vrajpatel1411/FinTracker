@@ -15,14 +15,16 @@ public class UserPrincipal implements OAuth2User , UserDetails{
     private UUID id;
     private String email;
     private String password;
+    private boolean isEmailVerified;
     private Collection<? extends GrantedAuthority> authorities;
     private Map<String, Object> attributes;
 
-    public UserPrincipal(UUID id, String email, String password, Collection<? extends GrantedAuthority> authorities) {
+    public UserPrincipal(UUID id, String email, String password,boolean isEmailVerified, Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
         this.email = email;
         this.password = password;
         this.authorities = authorities;
+        this.isEmailVerified = isEmailVerified;
     }
 
     public static UserPrincipal create(User user) {
@@ -33,6 +35,7 @@ public class UserPrincipal implements OAuth2User , UserDetails{
                 user.getUserId(),
                 user.getEmail(),
                 user.getPassword(),
+                user.isEmailVerified(),
                 authorities
         );
     }
@@ -75,6 +78,14 @@ public class UserPrincipal implements OAuth2User , UserDetails{
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public boolean isEmailVerified() {
+        return isEmailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        isEmailVerified = emailVerified;
     }
 
     public void setPassword(String password) {
