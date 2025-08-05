@@ -9,10 +9,16 @@ const OauthRedirectHandler = () => {
     const navigate=useNavigate();
     const dispatch = useAppDispatch();
     useEffect(()=>{
+
+        console.log("OauthRedirectHandler: queryParameter", queryParameter.toString());
         const getToken=queryParameter.get('status');
         if(getToken=="true"){
             dispatch(Oauth2Success({status:true,message:null}));
             navigate("/home")
+        }
+        else if(getToken=="false" && queryParameter.get('email')!==null){
+            dispatch(Oauth2Success({status:false,message:"Needs email verification", userEmail: queryParameter.get('email') || ''}));
+            navigate("/verify-email");
         }
         else{
             dispatch(Oauth2Success({status:false, message: queryParameter.get('error') || "OAuth failed"}));

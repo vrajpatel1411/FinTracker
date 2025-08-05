@@ -58,7 +58,12 @@ const RegisterUser = () => {
 
     dispatch(validateUser())
       .unwrap()
-      .then(() => navigate("/home"))
+      .then((res) => {
+        console.log(res);
+        navigate("/home")
+  
+      })
+      
       .catch(() => {
         // Stay on register page
       });
@@ -103,12 +108,12 @@ const RegisterUser = () => {
         setLoading(true);
         dispatch(registerUser(user))
           .unwrap()
-          .then((res:{
-            status: boolean;
-            message: string;
-          }) => {
-            setLoading(false);
-            if (res.status === true) {
+          .then((res) => {
+            
+            if(res.status === false && res.needEmailVerification){
+              navigate("/verify-email");
+            }
+            else if (res.status === true) {
               navigate("/home");
             }
             })

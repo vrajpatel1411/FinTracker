@@ -1,9 +1,10 @@
 import { Route, Routes } from 'react-router'
 import RedirectRoute from './RedirectRoute'
-import RedirectHandler from '../routes/RedirectRoute'
+import OauthRedirectHandler from '../routes/OauthRedirectHandler'
 import React from 'react';
 import Home from '../Pages/HomePage'
 import PrivateRoute from './PrivateRoute'
+import OtpVerificationPage from '../Pages/OtpVerificationPage';
 
 
 
@@ -14,7 +15,8 @@ const CustomRoutes = () => {
   return (
     <div>
         <Routes>
-            <Route path='/oauth2/redirect' element={<RedirectHandler />} />
+          <Route path="/verify-email" element={<OtpVerificationPage />} />
+            <Route path='/oauth2/redirect' element={<OauthRedirectHandler />} />
             <Route path="/" element={<RedirectRoute />} />
             <Route path="/register" element={<React.Suspense fallback={<div>Loading...</div>}>
                   <RegisterUser />

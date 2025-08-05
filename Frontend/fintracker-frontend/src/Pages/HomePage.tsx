@@ -11,32 +11,28 @@ const Home = () => {
     
     const [data, setData] = React.useState<string | null>(null);
     const navigate = useNavigate()
-    const dispatch = useAppDispatch();
+    // const dispatch = useAppDispatch();
   const hasValidatedRef = React.useRef(false);
 
 useEffect(() => {
   if (hasValidatedRef.current) return;
   hasValidatedRef.current = true;
-       dispatch(validateUser())
-    .unwrap()
-    .then(() => {
-      // Step 2: If valid, fetch personal data
-      return axios.get(import.meta.env.VITE_PERSONAL_EXPENSE_URL, {
+
+  const res=axios.get(import.meta.env.VITE_PERSONAL_EXPENSE_URL, {
         withCredentials: true,
       });
-    })
-    .then((res:AxiosResponse) => {
-      if (res.status === 200) {
-        setData(res.data);
-      } else {
-        navigate("/login");
-      }
-    })
+
+  res.then((res:AxiosResponse) => {
+    if (res.status === 200) {
+      setData(res.data);
+    } else {
+      navigate("/login");
+    }
+  })
     .catch(() => {
-      
       navigate("/login");
     });
-    },[])
+}, [data, navigate]);
 
 
   return (

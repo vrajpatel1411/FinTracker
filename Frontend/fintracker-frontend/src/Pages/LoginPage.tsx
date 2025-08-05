@@ -84,14 +84,14 @@ const LoginUser = () => {
       setLoading(true);
       dispatch(loginUser(user))
       .unwrap()
-      .then((res:{
-        status: boolean;
-        message: string;
-      }) => {
+      .then((res) => {
         setLoading(false);
-        if (res.status === true) {
-          navigate("/home");
-        } 
+          if(res.status === false && res.needEmailVerification){
+              navigate("/verify-email");
+            }
+            else if (res.status === true) {
+              navigate("/home");
+            }
       })
       .catch((err:AxiosError) => {
         // Optional: handle rejected promise (network error, etc.)
