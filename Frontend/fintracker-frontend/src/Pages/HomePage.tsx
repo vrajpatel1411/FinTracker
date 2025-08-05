@@ -3,8 +3,6 @@ import React, { useEffect } from 'react'
 // import { useDispatch, } from 'react-redux';
 import { useNavigate } from 'react-router';
 
-import validateUser from '../Component/auth/Reducers/validateUser';
-import { useAppDispatch } from '../Redux/hooks';
 
 
 const Home = () => {
