@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
@@ -15,14 +16,19 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.vrajpatel.userauthservice.Exception.BadRequestException;
+import org.vrajpatel.userauthservice.service.AuthService;
 import org.vrajpatel.userauthservice.utils.CookiesUtil;
 import org.vrajpatel.userauthservice.utils.HttpCookieOauth2;
 import org.vrajpatel.userauthservice.utils.JwtUtils.TokenProvider;
+import org.vrajpatel.userauthservice.utils.OTPService.EmailService;
+import org.vrajpatel.userauthservice.utils.OTPService.OTP;
+import org.vrajpatel.userauthservice.utils.UserPrincipal;
 import org.vrajpatel.userauthservice.utils.config.AppProperties;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static org.vrajpatel.userauthservice.utils.HttpCookieOauth2.REDIRECT_URI_PARAM_COOKIE_NAME;
 
@@ -39,6 +45,15 @@ public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     @Autowired
     private HttpCookieOauth2 cookieOauth2;
 
+    @Autowired
+    private OTP otpService;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
     @Value("${domain}")
     private String domain;
 
@@ -52,13 +67,18 @@ public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             return;
         }
 
-        String token=null;
-        if(!targetUrl.isEmpty()){
-            token= tokenProvider.createJWT(authentication);
-        }
+        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
 
-        if(token!=null){
-            ResponseCookie cookie=ResponseCookie.from("jwttoken",token) .httpOnly(true)
+        if(userPrincipal.isEmailVerified()){
+            String accessToken=null;
+            String refreshToken=null;
+            if(!targetUrl.isEmpty()){
+                accessToken= tokenProvider.createJWT('A',(UserPrincipal) authentication.getPrincipal());
+                refreshToken=tokenProvider.createJWT('R',(UserPrincipal) authentication.getPrincipal());
+            }
+
+            if(accessToken!=null && refreshToken!=null){
+                ResponseCookie cookie=ResponseCookie.from("accessToken",accessToken) .httpOnly(true)
                     .maxAge(3600)
                     .sameSite("None")
                     .domain(domain)
@@ -66,14 +86,34 @@ public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                     .path("/")
                     .build();
 
-            response.addHeader(HttpHeaders.SET_COOKIE,cookie.toString());
+                ResponseCookie cookie2=ResponseCookie.from("refreshToken",refreshToken) .httpOnly(true)
+                    .maxAge(3600)
+                    .sameSite("None")
+                    .domain(domain)
+                    .secure(true)
+                    .path("/")
+                    .build();
+                response.addHeader(HttpHeaders.SET_COOKIE,cookie.toString());
+                response.addHeader(HttpHeaders.SET_COOKIE,cookie2.toString());
+            }
+            UriComponentsBuilder builder = UriComponentsBuilder
+                    .fromUriString(targetUrl)
+                    .queryParam("status", true);
+            targetUrl = builder.toUriString();
+        }
+        else {
+            String otp= otpService.generateOTP();
+            emailService.sendEmail(userPrincipal.getEmail(),"OTP Verification","Your OTP is: "+otp);
+            stringRedisTemplate.opsForValue().set("OTP:"+userPrincipal.getEmail().toLowerCase(), otp, 120, TimeUnit.SECONDS);
+            UriComponentsBuilder builder = UriComponentsBuilder
+                    .fromUriString(targetUrl)
+                    .queryParam("email", userPrincipal.getEmail())
+                    .queryParam("status", false);
+            targetUrl = builder.toUriString();
         }
 
         clearAuthenticationAttributes(request);
-        UriComponentsBuilder builder = UriComponentsBuilder
-                .fromUriString(targetUrl)
-                .queryParam("success", "true");
-        targetUrl = builder.toUriString();
+
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
 
     }

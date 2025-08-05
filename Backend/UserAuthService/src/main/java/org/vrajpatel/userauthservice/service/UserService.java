@@ -1,14 +1,19 @@
 package org.vrajpatel.userauthservice.service;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.vrajpatel.userauthservice.Exception.AuthenticationServiceException.UserNotFound;
 import org.vrajpatel.userauthservice.Repository.UserRepository;
+import org.vrajpatel.userauthservice.ResponseDTO.LoginResponseDTO;
 import org.vrajpatel.userauthservice.ResponseDTO.UserResponse;
 import org.vrajpatel.userauthservice.model.User;
+import org.vrajpatel.userauthservice.requestDTO.OtpDto;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -18,6 +23,14 @@ public class UserService {
     @Autowired
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
+    }
+
+    public User findUserById(UUID id) throws UserNotFound {
+        Optional<User> user=userRepository.findById(id);
+        if(user.isPresent()){
+            return user.get();
+        }
+        throw new UserNotFound("User not found with id: "+id );
     }
 
     public ResponseEntity<UserResponse> findUserByEmail(String email) {
@@ -36,4 +49,6 @@ public class UserService {
             return new ResponseEntity<>(userResponse,HttpStatus.NOT_FOUND);
         }
     }
+
+
 }
