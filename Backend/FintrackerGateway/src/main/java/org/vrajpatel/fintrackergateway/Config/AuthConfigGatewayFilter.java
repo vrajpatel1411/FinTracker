@@ -3,7 +3,6 @@ package org.vrajpatel.fintrackergateway.Config;
 import org.apache.http.HttpHeaders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -16,12 +15,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ResponseStatusException;
 import org.vrajpatel.fintrackergateway.Config.Exception.BadException;
-import org.vrajpatel.fintrackergateway.Config.RoutesValidator.AuthServiceRouteValidator;
 import org.vrajpatel.fintrackergateway.ResponseDto.TokenDTO;
 import org.vrajpatel.fintrackergateway.ResponseDto.ValidationResponseDto;
 import reactor.core.publisher.Mono;
 
 import java.util.Objects;
+
 
 @Component
 public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthConfigGatewayFilter.Config> {
@@ -42,8 +41,6 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
         super(Config.class);
     }
 
-    @Autowired
-    private AuthServiceRouteValidator authServiceRouteValidator;
 
     @Override
     public GatewayFilter apply(Config cfg) {
@@ -55,15 +52,16 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
             String authHeader = null;
             try {
                 if (exchange.getRequest().getCookies().getFirst("accessToken") != null) {
-                    authHeader = exchange.getRequest().getCookies().getFirst("accessToken").getValue();
-                    logger.info("JWT Token found: " + authHeader);
+                    authHeader = Objects.requireNonNull(exchange.getRequest().getCookies().getFirst("accessToken")).getValue();
+                    logger.info("JWT Token found from client: {}", authHeader);
                 }
             } catch (Exception e) {
-                logger.error("Error extracting JWT token: " + e.getMessage());
+                logger.error("Error extracting JWT token: {}", e.getMessage());
             }
             WebClient webClient = WebClient.builder().baseUrl(validationUrl).defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .build();
             if (authHeader == null || authHeader.isEmpty()) {
+                logger.info("Auth header is empty");
                 HttpCookie cookie = exchange.getRequest().getCookies().getFirst("refreshToken");
 
                 if (cookie == null || cookie.getValue().isEmpty()) {
@@ -79,27 +77,25 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
                         .flatMap(response ->
                                 {
                                     if (response.getAccessToken() != null) {
-                                        logger.info("JWT Token found: " + response.getAccessToken());
-                                        logger.info("User Email"+ response.getUserEmail());
-                                        logger.info("User Id"+ response.getUserId());
+                                        logger.info("JWT Token found: {}", response.getAccessToken());
+                                        logger.info("User Email {}", response.getUserEmail());
+                                        logger.info("User Id {}", response.getUserId());
                                         ServerHttpRequest mutatedRequest = exchange.getRequest()
                                                 .mutate()
                                                 .header("userEmail", response.getUserEmail())
                                                 .header("userId", response.getUserId())
                                                 .build();
                                         return chain.filter(exchange.mutate().request(mutatedRequest).build()).then(
-                                                Mono.fromRunnable(() -> {
-                                                    exchange.getResponse().addCookie(
-                                                            ResponseCookie.from("accessToken", response.getAccessToken())
-                                                                    .httpOnly(true)
-                                                                    .secure(true)
-                                                                    .path("/")
-                                                                    .sameSite("None")
-                                                                    .domain(domain)
-                                                                    .maxAge(300)
-                                                                    .build()
-                                                    );
-                                                })
+                                                Mono.fromRunnable(() -> exchange.getResponse().addCookie(
+                                                        ResponseCookie.from("accessToken", response.getAccessToken())
+                                                                .httpOnly(true)
+                                                                .secure(true)
+                                                                .path("/")
+                                                                .sameSite("None")
+                                                                .domain(domain)
+                                                                .maxAge(300)
+                                                                .build()
+                                                ))
                                         );
                                     } else {
                                         return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "JWT validation failed"));
@@ -107,7 +103,7 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
                                 }
                         )
                         .onErrorResume(Exception.class, e -> {
-                            logger.error("Error validating JWT: {}", e.getMessage());
+                            logger.error("Error validating JWT By Service: {}", e.getMessage());
                             return Mono.error(new BadException(
 
                                     "Error validating JWT: " + e.getMessage()
