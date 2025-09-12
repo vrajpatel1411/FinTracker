@@ -1,5 +1,6 @@
 package org.vrajpatel.personalexpense.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import lombok.Data;
@@ -12,7 +13,6 @@ import java.util.UUID;
 @Data
 @Entity
 @Table(name="personal_expenses")
-@RequiredArgsConstructor
 public class PersonalExpenseModel {
 
     @Id
@@ -22,6 +22,9 @@ public class PersonalExpenseModel {
 
     @Column(name="title")
     private String title;
+
+    @Column(name="user_id")
+    private UUID userId;
 
     @Column(name="description")
     private String description;
@@ -42,5 +45,13 @@ public class PersonalExpenseModel {
     private Boolean deleted;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name="category_id")
+    @JsonIgnore
     private CategoriesModel category;
+
+    @OneToOne(fetch=FetchType.LAZY)
+    @JoinColumn(name="receipt_id")
+    @JsonIgnore
+    private receiptModel receipt;
+
 }
