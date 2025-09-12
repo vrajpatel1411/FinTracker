@@ -2,7 +2,7 @@ import { Route, Routes } from 'react-router'
 import RedirectRoute from './RedirectRoute'
 import OauthRedirectHandler from '../routes/OauthRedirectHandler'
 import React from 'react';
-import Home from '../Pages/HomePage'
+import PersonalExpensePage from '../Pages/PersonalExpensePage'
 import PrivateRoute from './PrivateRoute'
 import OtpVerificationPage from '../Pages/OtpVerificationPage';
 
@@ -29,7 +29,7 @@ const CustomRoutes = () => {
               } />
 
             <Route element={<PrivateRoute/>}>
-              <Route path="/home" element={<Home />} />
+              <Route path="/personal" element={<PersonalExpensePage />} />
               
             </Route>
         </Routes>

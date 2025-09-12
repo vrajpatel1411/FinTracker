@@ -5,11 +5,11 @@ import { ValidateEmail, ValidatePassword } from '../Utils/ValidateInputs';
 import { useNavigate, useSearchParams } from 'react-router';
 import Modal from '../Utils/Modal';
 import UserLogin from '../Types/UserLogin';
-import loginUser  from '../Component/auth/Reducers/loginUser';
+import loginUser  from '../Redux/Reducers/loginUser';
 import { useSelector } from 'react-redux';
 import { RootState } from '../Redux/Store';
 
-import validateUser from '../Component/auth/Reducers/validateUser';
+import validateUser from '../Redux/Reducers/validateUser';
 import {  AxiosError, } from 'axios';
 import { useAppDispatch } from '../Redux/hooks';
 
@@ -51,7 +51,7 @@ const LoginUser = () => {
         if(!error){
           dispatch(validateUser())
             .unwrap()
-            .then(() => navigate("/home"))
+            .then(() => navigate("/personal"))
             .catch(() => {
               // do nothing — stay on login
             });
@@ -87,15 +87,18 @@ const LoginUser = () => {
       .then((res) => {
         setLoading(false);
           if(res.status === false && res.needEmailVerification){
+              console.log("Setting email in local storage:", res.email);
+              localStorage.setItem("userEmail", res.email);
               navigate("/verify-email");
             }
             else if (res.status === true) {
-              navigate("/home");
+              navigate("/personal");
             }
       })
       .catch((err:AxiosError) => {
         // Optional: handle rejected promise (network error, etc.)
-        console.error("Login failed:", err);
+        console.error("Login failed:", err.message);
+
       });
       
     };

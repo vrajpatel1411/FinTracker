@@ -58,9 +58,9 @@ const RegisterUser = () => {
 
     dispatch(validateUser())
       .unwrap()
-      .then((res) => {
-        console.log(res);
-        navigate("/home")
+      .then(() => {
+        // console.log(res);
+        navigate("/personal")
   
       })
       
@@ -111,6 +111,7 @@ const RegisterUser = () => {
           .then((res) => {
             
             if(res.status === false && res.needEmailVerification){
+              localStorage.setItem("userEmail", res.email);
               navigate("/verify-email");
             }
             else if (res.status === true) {

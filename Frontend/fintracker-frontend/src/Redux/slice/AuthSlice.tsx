@@ -1,10 +1,10 @@
 import {  createSlice } from "@reduxjs/toolkit";
 import AuthState from "../../Types/AuthState";
-import loginUser  from "../auth/Reducers/loginUser";
-import registerUser  from "../auth/Reducers/registerUser";
-import Oauth2Success from "../auth/Reducers/Oauth2Success";
-import validateUser from "../auth/Reducers/validateUser";
-import VerifyOTP from "./Reducers/VerifyOTP";
+import loginUser  from "../Reducers/loginUser";
+import registerUser  from "../Reducers/registerUser";
+import Oauth2Success from "../Reducers/Oauth2Success";
+import validateUser from "../Reducers/validateUser";
+import VerifyOTP from "../Reducers/VerifyOTP";
 
 
 const initialState: AuthState = {
@@ -19,7 +19,16 @@ export const authSlice = createSlice({
     name:"auth",
     initialState,
     reducers:{
-        
+        logout: (state) =>{
+
+            
+            state.isAuthenticated = false;
+            state.message = '';
+            state.isError = false;
+            state.needEmailVerification = false;
+            state.userEmail = '';
+
+        }
     },
    extraReducers: (builder) => {
     

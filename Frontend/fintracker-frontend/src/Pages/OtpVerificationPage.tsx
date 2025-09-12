@@ -1,21 +1,19 @@
-import { useSelector } from "react-redux";
-import { RootState } from "../Redux/Store";
 import OTP from "../Component/auth/Otp";
-import {  useState } from "react";
+import {  useEffect, useState } from "react";
 import { Box, Button, Link, Typography } from "@mui/material";
 import Card from "../styles/card";
 import SignUpContainer from "../styles/SignUpContainer";
 import {useTimer} from "react-timer-hook"
 import { useAppDispatch } from "../Redux/hooks";
-import VerifyOTP from "../Component/auth/Reducers/VerifyOTP";
-import { useNavigate } from "react-router";
+import VerifyOTP from "../Redux/Reducers/VerifyOTP";
+import { useNavigate } from "react-router-dom";
 import Modal from "../Utils/Modal";
 import axios from "axios";
 
 
 const OtpVerificationPage = () => {
 
-    const userEmail = useSelector((state:RootState)=> state.authReducer.userEmail);
+    const userEmail = localStorage.getItem("userEmail");
     const [otp, setOtp] = useState<string>("");
     const [isTimerExpired,setTimerExpired] = useState(false);
     const [modal, setModal] = useState(false);
@@ -25,54 +23,107 @@ const OtpVerificationPage = () => {
     const navigate = useNavigate();
 
     const getExpiryTime = () => {
-    const time = new Date();
-    time.setSeconds(time.getSeconds() + 2 * 60); // 2 minutes
-    return time;
+      const storedExpiryTime= localStorage.getItem("expiryTime");
+      if(!isTimerExpired && storedExpiryTime){
+        const ms=Number(storedExpiryTime);
+
+        if(!Number.isNaN(ms)&& ms > Date.now()){
+          return new Date(ms);
+        }
+      }
+      const ms=new Date();
+      ms.setSeconds(ms.getSeconds()+120);
+      localStorage.setItem("expiryTime",ms.getTime().toString());
+      return ms;
   };
+
+    // const [expiryTime, setExpireTime]= useState(getExpiryTime());
     const {
         minutes,
         seconds,
         restart
-    }=useTimer({ expiryTimestamp: getExpiryTime() , onExpire: () => setTimerExpired(true) });
+    }=useTimer({ expiryTimestamp: getExpiryTime() , onExpire: () => {
+      localStorage.removeItem("expiryTime");
+      setTimerExpired(true);
+    } });
+
+
+    useEffect(() => {
+        if(!userEmail) {
+          navigate("/login");
+          return;
+        }
+    },[userEmail,navigate])
+
+
+    useEffect(() => {
+  return () => {
+    // optional: keep storage clean if you want a fresh timer next visit
+    localStorage.removeItem("expiryTime");
+  };
+}, []);
 
     const requestOtp = () => {
-        restart(getExpiryTime());
-
+        if(!userEmail) {
+          navigate("/login");
+          return;
+        }
         axios.get(import.meta.env.VITE_RESENDOTP_URL+"?email="+userEmail, {
             withCredentials: true
         }).then((response) => {
             if (response.data.status === true) {
+                setOtp("");
                 setModal(true);
                 setoauthError("OTP sent to your email");
+                setTimerExpired(false);
+                restart(getExpiryTime());
             }
             else{
                 setModal(true);
                 setoauthError(response.data.message || "An error occurred while requesting OTP");
             }
         })
-       
-        setTimerExpired(false);
+        .catch((error) => {
+            setModal(true);
+            setoauthError(error.message || "An error occurred while requesting OTP");
+        });
+        
     }
 
     const submitOtp = (e: React.FormEvent) => {
         e.preventDefault();
+        if(isTimerExpired) {
+          requestOtp();
+          return;
+        }
         dispatch(VerifyOTP({ otp, userEmail: userEmail || "" }))
             .unwrap()
             .then((res)=>{
                 if(res.status === true) {
-                    navigate("/home");
+                    localStorage.removeItem("expiryTime");
+                    navigate("/personal");
+                    return;
                 }
-                if(res.status === false && res.email!== "") {
+                else if(res.status === false && res.email!== "") {
                     navigate("/verify-email");
                     setModal(true);
                     setoauthError(res.message);
+                    return;
                 }
                 else{
                     setModal(true);
                     setoauthError(res.message || "An error occurred while verifying OTP");
+                    return;
                 }
             })
-        console.log("OTP submitted:", otp);
+            .catch((err)=>{
+                setModal(true);
+                setoauthError(err.message || "An error occurred while verifying OTP");
+            }) 
+        }
+
+    const pad=(num:number)=>{
+      return String(num).padStart(2,'0');
     }
     return (
         <div>
@@ -107,7 +158,7 @@ const OtpVerificationPage = () => {
               variant="body1"
               sx={{ width: '100%', fontSize: 'clamp(1rem, 5vw, 0.75rem)' }}
             >
-              Request otp in {minutes}:{seconds} minutes
+              Request otp in {minutes}:{pad(seconds)}
             </Typography>):(<Typography
               component="p"
               variant="body1"
@@ -118,7 +169,7 @@ const OtpVerificationPage = () => {
 
             <Button
                 type="submit"
-                disabled={!otp}
+                disabled={isTimerExpired || otp.length!==6}
                 variant="contained"
                 sx={{width:'50%'}}>
                 Submit
