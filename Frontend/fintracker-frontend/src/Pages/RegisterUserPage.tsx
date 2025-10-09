@@ -14,10 +14,10 @@ import { useNavigate, useSearchParams } from 'react-router';
 
 import Modal from '../Utils/Modal';
 import User from '../Types/User';
-import registerUser  from '../Component/auth/Reducers/registerUser';
+import registerUser  from '../Redux/Reducers/registerUser';
 import { useSelector } from 'react-redux';
 import { RootState } from '../Redux/Store';
-import validateUser from '../Component/auth/Reducers/validateUser';
+import validateUser from '../Redux/Reducers/validateUser';
 
 import { useAppDispatch } from '../Redux/hooks';
 
