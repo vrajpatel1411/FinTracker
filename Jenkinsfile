@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        PROJECT_ID = 'fintracker-466620'
+        PROJECT_ID = 'fintracker-474600'
         REGION = 'us-central1'
         CLUSTER = 'fintracker-cluster'
         REGISTRY = "us-central1-docker.pkg.dev/${PROJECT_ID}/fintracker-docker-registry"
@@ -37,28 +37,28 @@ pipeline {
             }
         }
 
-        // stage('Build & Deploy Gateway Service') {
-        //     // when {
-        //     //     expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Backend/FintrackerGateway", returnStatus: true) == 0 }
-        //     // }
-        //     steps {
-        //         dir('Backend/FintrackerGateway') {
-        //             sh '''
-        //                 mvn clean package -DskipTests
-        //                 docker build -t $REGISTRY/gateway/fintrackergateway:$COMMIT_SHA .
-        //                 docker push $REGISTRY/gateway/fintrackergateway:$COMMIT_SHA
+        stage('Build & Deploy Gateway Service') {
+            when {
+                expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Backend/FintrackerGateway", returnStatus: true) == 0 }
+            }
+            steps {
+                dir('Backend/FintrackerGateway') {
+                    sh '''
+                        mvn clean package -DskipTests
+                        docker build -t $REGISTRY/gateway/fintrackergateway:$COMMIT_SHA .
+                        docker push $REGISTRY/gateway/fintrackergateway:$COMMIT_SHA
 
-        //                 sed "s|image:.*|image: $REGISTRY/gateway/fintrackergateway:$COMMIT_SHA|" k8s/Deployment.yaml > k8s/Deployment-patched.yaml
+                        sed "s|image:.*|image: $REGISTRY/gateway/fintrackergateway:$COMMIT_SHA|" k8s/Deployment.yaml > k8s/Deployment-patched.yaml
 
-        //                 kubectl apply -f k8s/service.yaml
-        //                 kubectl apply -f k8s/managed-cert.yaml
-        //                 kubectl apply -f k8s/ingress.yaml
-        //                 kubectl apply -f k8s/backend.yaml
-        //                 kubectl apply -f k8s/Deployment-patched.yaml
-        //             '''
-        //         }
-        //     }
-        // }
+                        kubectl apply -f k8s/service.yaml
+                        kubectl apply -f k8s/managed-cert.yaml
+                        kubectl apply -f k8s/ingress.yaml
+                        kubectl apply -f k8s/backend.yaml
+                        kubectl apply -f k8s/Deployment-patched.yaml
+                    '''
+                }
+            }
+        }
 
         // stage('Build & Deploy Auth Service') {
         //     // when {
