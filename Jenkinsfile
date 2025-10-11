@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent 'slave-node'
 
     environment {
         PROJECT_ID = 'fintracker-474600'
@@ -38,9 +38,9 @@ pipeline {
         }
 
         stage('Build & Deploy Gateway Service') {
-            when {
-                expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Backend/FintrackerGateway", returnStatus: true) == 0 }
-            }
+            // when {
+            //     expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Backend/FintrackerGateway", returnStatus: true) == 0 }
+            // }
             steps {
                 dir('Backend/FintrackerGateway') {
                     sh '''
