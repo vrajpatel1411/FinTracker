@@ -1,5 +1,7 @@
 pipeline {
-    agent 'slave-node'
+    agent {
+        label 'slave-node'
+    }
 
     environment {
         PROJECT_ID = 'fintracker-474600'
