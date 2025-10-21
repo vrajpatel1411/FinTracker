@@ -122,25 +122,7 @@ public class AuthController {
             authResponse.setMessage("Internal Server Error");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(authResponse);
         }
-//        try {
-//            LoginResponseDTO response=authService.loginService(userDTO);
-//            authResponse.setStatus(true);
-//            authResponse.setMessage("Successfully logged in");
-//            return ResponseEntity.ok().headers(SetCookies.setCookies(new HttpHeaders(),response.getAccessToken(),response.getRefreshToken())).body(authResponse);
-//
-//        }catch (UserNotFound ex){
-//            authResponse.setStatus(false);
-//            authResponse.setMessage("User not found");
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(authResponse);
-//        }catch (UnAuthorizedException ex){
-//            authResponse.setStatus(false);
-//            authResponse.setMessage("Unauthorized, Wrong Password");
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(authResponse);
-//        }catch (Exception e){
-//            authResponse.setStatus(false);
-//            authResponse.setMessage("Internal Server Error");
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(authResponse);
-//        }
+
     }
 
     @Operation(summary = "Registering a new User" , description="Register New User based on information provided and sent back jwt token if successfull")

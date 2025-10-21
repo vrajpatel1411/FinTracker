@@ -64,6 +64,8 @@ public class AuthService {
         this.emailService = emailService;
     }
 
+
+
     @Transactional
     public LoginResponseDTO loginService(@Valid UserDTO userDTO) throws UserNotFound, UnAuthorizedException {
 
@@ -104,6 +106,7 @@ public class AuthService {
     public LoginResponseDTO registerService(RegisterUserDto userDTO) throws UserExistException {
 
         boolean isUser = userRepository.existsByEmail(userDTO.getEmail().toLowerCase());
+
         if (isUser) {
             throw new UserExistException("Email Is Already Registered");
         } else {
@@ -114,7 +117,7 @@ public class AuthService {
 
             user.setCreatedAt(new Date());
             user.setAuthProvider(AuthProvider.usernamepassword);
-            userRepository.save(user);
+            user=userRepository.save(user);
 
             sendOTP(userDTO.getEmail().toLowerCase());
             LoginResponseDTO loginResponseDTO=new LoginResponseDTO();
@@ -195,6 +198,7 @@ public class AuthService {
 
                     user.get().setEmailVerified(true);
                     userRepository.save(user.get());
+
                     return loginResponseDTO;
                 } else {
                     LoginResponseDTO loginResponseDTO=new LoginResponseDTO();
