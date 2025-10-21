@@ -42,9 +42,10 @@ spec:
                 secretKeyRef:
                   name: db-credentials
                   key: REDIS_URL
-            # - name: REDIS_PASSWORD
-            #   valueFrom:
-            #     secretKeyRef:
-            #       name: db-credentials
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
 
-            #       key: REDIS_PASSWORD
+                  key: REDIS_PASSWORD
+
