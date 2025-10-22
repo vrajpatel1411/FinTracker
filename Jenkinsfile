@@ -62,26 +62,26 @@ pipeline {
         //     }
         // }
 
-        stage('Build & Deploy Auth Service') {
-            // when {
-            //     expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Backend/UserAuthService", returnStatus: true) == 0 }
-            // }
-            steps {
-                dir('Backend/UserAuthService') {
-                    sh '''
-                        mvn clean package -DskipTests
-                        docker build -t $REGISTRY/userauthentication/userauthentication:$COMMIT_SHA .
-                        docker push $REGISTRY/userauthentication/userauthentication:$COMMIT_SHA
+        // stage('Build & Deploy Auth Service') {
+        //     // when {
+        //     //     expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Backend/UserAuthService", returnStatus: true) == 0 }
+        //     // }
+        //     steps {
+        //         dir('Backend/UserAuthService') {
+        //             sh '''
+        //                 mvn clean package -DskipTests
+        //                 docker build -t $REGISTRY/userauthentication/userauthentication:$COMMIT_SHA .
+        //                 docker push $REGISTRY/userauthentication/userauthentication:$COMMIT_SHA
 
-                        sed "s|image:.*|image: $REGISTRY/userauthentication/userauthentication:$COMMIT_SHA|" k8s/Deployment.yaml > k8s/Deployment-patched.yaml
+        //                 sed "s|image:.*|image: $REGISTRY/userauthentication/userauthentication:$COMMIT_SHA|" k8s/Deployment.yaml > k8s/Deployment-patched.yaml
 
                        
-                        kubectl apply -f k8s/service.yaml
-                        kubectl apply -f k8s/Deployment-patched.yaml
-                    '''
-                }
-            }
-        }
+        //                 kubectl apply -f k8s/service.yaml
+        //                 kubectl apply -f k8s/Deployment-patched.yaml
+        //             '''
+        //         }
+        //     }
+        // }
 
         // stage('Build & Deploy Frontend') {
         //     // when {
@@ -104,26 +104,26 @@ pipeline {
         //     }
         
         // }
-        // stage('Build & Deploy Personal Expense Service') {
-        //     // when {
-        //     //     expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Frontend/fintracker-frontend", returnStatus: true) == 0 }
-        //     // }
-        //     steps {
-        //         dir('Backend/personalExpense') {
-        //             sh '''
-        //                 mvn clean package -DskipTests
-        //                 docker build -t $REGISTRY/personalexpense/personalexpense:$COMMIT_SHA .
-        //                 docker push $REGISTRY/personalexpense/personalexpense:$COMMIT_SHA
+        stage('Build & Deploy Personal Expense Service') {
+            // when {
+            //     expression { sh(script: "git diff --name-only HEAD~1 HEAD | grep ^Frontend/fintracker-frontend", returnStatus: true) == 0 }
+            // }
+            steps {
+                dir('Backend/personalExpense') {
+                    sh '''
+                        mvn clean package -DskipTests
+                        docker build -t $REGISTRY/personalexpense/personalexpense:$COMMIT_SHA .
+                        docker push $REGISTRY/personalexpense/personalexpense:$COMMIT_SHA
 
-        //                 sed "s|image:.*|image: $REGISTRY/personalexpense/personalexpense:$COMMIT_SHA|" k8s/Deployment.yaml > k8s/Deployment-patched.yaml
+                        sed "s|image:.*|image: $REGISTRY/personalexpense/personalexpense:$COMMIT_SHA|" k8s/Deployment.yaml > k8s/Deployment-patched.yaml
 
-        //                 kubectl apply -f k8s/service.yaml
-        //                 kubectl apply -f k8s/secrets.yaml
-        //                 kubectl apply -f k8s/Deployment-patched.yaml
-        //             '''
-        //         }
-        //     }
-        // }
+                        kubectl apply -f k8s/service.yaml
+                        kubectl apply -f k8s/secrets.yaml
+                        kubectl apply -f k8s/Deployment-patched.yaml
+                    '''
+                }
+            }
+        }
     }
 
     post {
@@ -141,6 +141,7 @@ pipeline {
         }
     }
 }
+
 
 
 
