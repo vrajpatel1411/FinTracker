@@ -21,6 +21,7 @@ const validateUser = createAsyncThunk<
   "auth/validateUser",
   async (_, thunkAPI) => {
     try {
+      
       const response = await axios.get<ValidateResponse>(
         import.meta.env.VITE_VALIDATE_URL,
         {
@@ -36,9 +37,11 @@ const validateUser = createAsyncThunk<
         });
       }
     } catch (error) {
+     
       if (axios.isAxiosError(error) && error.response) {
+        
         return thunkAPI.rejectWithValue({
-          message: error.response.data?.message || "Session invalid",
+          message: error.response.data?.error || "Session invalid",
         });
       }
 

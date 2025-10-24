@@ -5,6 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7fdc48fb-cf2d-40c4-8b9b-e600b3eedf46" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/../FinTracker-auth" beforeDir="false" afterPath="$PROJECT_DIR$/../FinTracker-auth" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../FinTracker-expense" beforeDir="false" afterPath="$PROJECT_DIR$/../FinTracker-expense" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../FinTracker-frontend" beforeDir="false" afterPath="$PROJECT_DIR$/../FinTracker-frontend" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../FinTracker-gateway" beforeDir="false" afterPath="$PROJECT_DIR$/../FinTracker-gateway" afterDir="false" />
@@ -17,18 +18,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "vrajpatel1411"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;vrajpatel1411&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/vrajpatel1411/FinTracker.git",
-    "accountId": "f7c92927-3648-4efd-b1a4-c390a6f311a0"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/vrajpatel1411/FinTracker.git&quot;,
+    &quot;accountId&quot;: &quot;f7c92927-3648-4efd-b1a4-c390a6f311a0&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 4
 }</component>
@@ -43,7 +44,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "main",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/vrajp/Desktop/Personal/projects/FinTracker/Backend/personalExpense",
+    "last_opened_file_path": "C:/Users/vrajp/Desktop/Personal/projects/FinTracker/Backend/FintrackerServiceRegistry",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -70,6 +71,7 @@
       <updated>1738629730447</updated>
       <workItem from="1738629731636" duration="556000" />
       <workItem from="1753219072692" duration="19000" />
+      <workItem from="1753915546387" duration="66000" />
     </task>
     <servers />
   </component>

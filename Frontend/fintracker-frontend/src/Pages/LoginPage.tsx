@@ -1,9 +1,7 @@
-import { Box, Button, CssBaseline, Divider, FormControl, FormLabel, IconButton, Link, Stack, styled, TextField, Typography } from '@mui/material';
+import { Box, Button, CssBaseline, Divider, FormControl, FormLabel, Link, TextField, Typography } from '@mui/material';
 import React, { useEffect, useRef } from 'react'
 import { ValidateEmail, ValidatePassword } from '../Utils/ValidateInputs';
-import HandleOauthLogin from '../Utils/HandleOauthLogin';
-import { FacebookIcon, GithubIcon, GoogleIcon } from '../Utils/CustomIcons';
-import MuiCard from '@mui/material/Card';
+
 import { useNavigate, useSearchParams } from 'react-router';
 import Modal from '../Utils/Modal';
 import UserLogin from '../Types/UserLogin';
@@ -14,76 +12,53 @@ import { RootState } from '../Redux/Store';
 import validateUser from '../Redux/Reducers/validateUser';
 import {  AxiosError, } from 'axios';
 import { useAppDispatch } from '../Redux/hooks';
-const Card = styled(MuiCard)(({ theme }) => ({
-    display: 'flex',
-    flexDirection: 'column',
-    alignSelf: 'center',
-    width: '100%',
-    padding: theme.spacing(3),
-    gap: theme.spacing(1),
-    margin: 'auto',
-    boxShadow:
-      'hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px',
-    [theme.breakpoints.up('sm')]: {
-      width: '450px',
-    },
-    ...theme.applyStyles('dark', {
-      boxShadow:
-        'hsla(220, 30%, 5%, 0.5) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.08) 0px 15px 35px -5px',
-    }),
-  }));
-  
-  const SignUpContainer = styled(Stack)(({ theme }) => ({
-    height: 'calc((1 - var(--template-frame-height, 0)) * 100dvh)',
-    minHeight: '100%',
-    padding: theme.spacing(1),
-    [theme.breakpoints.up('sm')]: {
-      padding: theme.spacing(2),
-    },
-    '&::before': {
-      content: '""',
-      display: 'block',
-      position: 'absolute',
-      zIndex: -1,
-      inset: 0,
-      backgroundImage:
-        'radial-gradient(ellipse at 50% 50%, hsl(210, 100%, 97%), hsl(0, 0%, 100%))',
-      backgroundRepeat: 'no-repeat',
-      ...theme.applyStyles('dark', {
-        backgroundImage:
-          'radial-gradient(at 50% 50%, hsla(210, 100%, 16%, 0.5), hsl(220, 30%, 5%))',
-      }),
-    },
-  }));
+
+// import SocialMediaButtons from '../Component/auth/SocialMediaButtons';
+
+const SocialMediaButtons = React.lazy(() => import('../Component/auth/SocialMediaButtons'));
+const Card = React.lazy(() => import('../styles/card'));
+const SignUpContainer = React.lazy(() => import('../styles/SignUpContainer'));
+
 const LoginUser = () => {
-    const [emailError, setEmailError] = React.useState(false);
-    const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
-    const [passwordError, setPasswordError] = React.useState(false);
-    const [passwordErrorMessage, setPasswordErrorMessage] = React.useState('');
-    const [isValid, setValid] = React.useState(false);
-    const [queryParameter]=useSearchParams()
-    const [modal, setModal] = React.useState(false);
+  const [emailError, setEmailError] = React.useState(false);  
+  const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
+
+  const [passwordError, setPasswordError] = React.useState(false);
+  const [passwordErrorMessage, setPasswordErrorMessage] = React.useState('');
+
+  const [isValid, setValid] = React.useState(false);
+
+  const [queryParameter]=useSearchParams()
+
+  const [modal, setModal] = React.useState(false);
+    
     const [oauthError, setoauthError] = React.useState<string | null>(null);
+    const error=queryParameter.get('error');
+
     const dispatch = useAppDispatch();
+
     const navigate = useNavigate();
+
     const {message,isError}=useSelector((state:RootState)=>state.authReducer)
-  const hasValidatedRef = useRef(false);
 
-useEffect(() => {
-    if (hasValidatedRef.current) return;
-    hasValidatedRef.current = true;
+    const [isLoading, setLoading] = React.useState(false);
 
-    dispatch(validateUser())
-      .unwrap()
-      .then(() => navigate("/home"))
-      .catch(() => {
-        // do nothing — stay on login
-      });
-  }, [dispatch, navigate]);
+    const hasValidatedRef = useRef(false);
 
-     React.useEffect(()=>{
-        const error=queryParameter.get('error');
-       
+    useEffect(() => {
+        if (hasValidatedRef.current) return;
+        hasValidatedRef.current = true;
+        if(!error){
+          dispatch(validateUser())
+            .unwrap()
+            .then(() => navigate("/personal"))
+            .catch(() => {
+              // do nothing — stay on login
+            });
+        }
+      }, [error,dispatch, navigate,oauthError]);
+
+    useEffect(()=>{
         if(error){
           setModal(true)
           setoauthError(error)
@@ -92,7 +67,7 @@ useEffect(() => {
           setModal(true)
           setoauthError(message)
         }
-      },[queryParameter, isError,message])
+    },[error, isError, message])
     
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -106,32 +81,32 @@ useEffect(() => {
               email: data.get('email') as string,
               password: data.get('password') as string,
             };
+      setLoading(true);
       dispatch(loginUser(user))
-    .unwrap()
-    .then((res:{
-      status: boolean;
-      message: string;
-    }) => {
-     
-      if (res.status === true) {
-        navigate("/home");
-      } else {
-        // optional: show error modal if needed
-      }
-    })
-    .catch((err:AxiosError) => {
-      // Optional: handle rejected promise (network error, etc.)
-      console.error("Login failed:", err);
-    });
+      .unwrap()
+      .then((res) => {
+        setLoading(false);
+          if(res.status === false && res.needEmailVerification){
+              console.log("Setting email in local storage:", res.email);
+              localStorage.setItem("userEmail", res.email);
+              navigate("/verify-email");
+            }
+            else if (res.status === true) {
+              navigate("/personal");
+            }
+      })
+      .catch((err:AxiosError) => {
+        // Optional: handle rejected promise (network error, etc.)
+        console.error("Login failed:", err.message);
+
+      });
       
     };
-
     return (
       <div className='relative'>
         {
             modal && <Modal error={oauthError} setModal={setModal} />
         }
-       
         <CssBaseline enableColorScheme />
         <SignUpContainer direction="column" justifyContent="space-between">
           <Card variant="outlined">
@@ -149,14 +124,12 @@ useEffect(() => {
               onSubmit={handleSubmit}
               sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
             >
-             
-             
               <FormControl>
                 <FormLabel htmlFor="email">Email</FormLabel>
                 <TextField
                   required
                   fullWidth
-                  id="email"
+                  id="emailFieldId"
                   placeholder="your@email.com"
                   onChange={(e) =>ValidateEmail(e.target.value,setEmailError,setEmailErrorMessage,setValid)}
                   name="email"
@@ -175,7 +148,7 @@ useEffect(() => {
                   name="password"
                   placeholder="••••••"
                   type="password"
-                  id="password"
+                  id="passwordFieldId"
                   onChange={(e) =>ValidatePassword(e.target.value,setPasswordError,setPasswordErrorMessage,setValid)}
                   autoComplete="new-password"
                   variant="outlined"
@@ -184,40 +157,33 @@ useEffect(() => {
                   color={passwordError ? 'error' : 'primary'}
                 />
               </FormControl>
-              
               <Button
                 type="submit"
                 fullWidth
                 variant="contained"
-                  disabled={!isValid  || emailError || passwordError}
+                  disabled={!isValid  || emailError || passwordError || isLoading}
               >
                 Sign up
               </Button>
-             
-            </Box>
-            <Divider>
-              <Typography sx={{ color: 'text.secondary' }}>or</Typography>
-            </Divider>
-            <Box sx={{ display: 'flex', justifyContent:"center", alignItems:"center", flexDirection: 'row', gap: 2 }}>
-              <IconButton   onClick={()=>HandleOauthLogin("google")}><GoogleIcon /></IconButton>
-              <IconButton onClick={()=>HandleOauthLogin("facebook")}><FacebookIcon /></IconButton>
-              <IconButton onClick={()=>HandleOauthLogin("github")}><GithubIcon /></IconButton>
               </Box>
-              
+              <Divider>
+                <Typography sx={{ color: 'text.secondary' }}>or</Typography>
+              </Divider>
+              <React.Suspense fallback={<div>Loading Social Media Buttons...</div>}>
+              <SocialMediaButtons/>  
+              </React.Suspense>
               <Typography sx={{ textAlign: 'center' }}>
-                Don't have an account?{' '}
+                  Don't have an account?{' '}
                 <Link href="/register"
                   variant="body2"
                   sx={{ alignSelf: 'center' }}
                 >
                   Create Here
                 </Link>
-              </Typography>
-            {/* </Box> */}
+              </Typography> 
           </Card>
         </SignUpContainer>
       </div>
     );
   }
-  
   export default LoginUser;

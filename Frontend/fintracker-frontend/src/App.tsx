@@ -1,4 +1,4 @@
-import CustomRoutes from "./Component/CustomRoutes"
+import CustomRoutes from "./routes/AppRoutes"
 
 function App() {
 
