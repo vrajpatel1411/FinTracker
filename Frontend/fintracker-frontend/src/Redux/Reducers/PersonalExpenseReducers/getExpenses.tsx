@@ -1,25 +1,32 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import PersonalExpenseResponseType from "../../../Types/PersonalExpenseListType";
+
+
 type ApiStatus = "success" | "failure";
-type ErrorPayload = {
+
+export type ErrorPayload = {
   message: string;
   status: string | ApiStatus | undefined;
   code?: number;
 };
-type Args = {
-  page?: number;
-  size?: number;
-};
+
 const getExpenses = createAsyncThunk<
-   PersonalExpenseResponseType,
-    Args,
-    {rejectValue: ErrorPayload}>(
+    PersonalExpenseResponseType,
+    void,
+    { rejectValue: ErrorPayload }
+>(
         "personalExpense/getExpenses",
-    async (args,{rejectWithValue}) => {
+    async (_,{rejectWithValue,getState}) => {
          try{
-           const page = Math.max(0, args.page ?? 0);
-            const size = Math.min(Math.max(1, args.size ?? 10), 100); // mirror server validation
+            let state=getState() as any;
+            console.log("Current query params in state:", state.personalExpenseReducer
+            ?.queryParams);
+            let page = state.personalExpenseReducer.queryParams?.page || 0;
+            let size = state.personalExpenseReducer.queryParams?.size || 10;
+            console.log("Fetching expenses with page:", page, "and size:", size);
+            page = Math.max(0, page);
+            size = Math.min(Math.max(1, size), 100); // mirror server validation
 
 
             const url = `${import.meta.env.VITE_PERSONAL_EXPENSE_URL}/?page=${page}&size=${size}`;

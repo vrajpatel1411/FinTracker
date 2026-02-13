@@ -3,18 +3,30 @@ interface link {
     href: string;
 }
 
-export interface PersonalExpense{
-    expenseId: number;
-    title: string;
-    description: string;
-    amount: number;
-    expenseDate: string;
-    categoryId: string;
-    categoryName: string;
-    categoryColor: string;
-    receiptId: null | number;
-    receiptUrl: null | string;
-}
+type ExpenseCore = {
+  expenseId?: string;
+  title: string;
+  description: string;
+  amount: number;
+  expenseDate: string;
+  categoryId: string;
+
+};
+
+export type AddExpensePayload = ExpenseCore & {
+  isReceipt: boolean;
+  receiptFile?: File;
+};
+
+export type PersonalExpense = ExpenseCore & {
+ 
+  categoryName: string;
+  categoryColor: string;
+  receiptId: number | null;
+  isReceipt: boolean;
+  receiptUrl: string | null;
+};
+
 
 export interface PersonalExpenseListType{
     expenseList: PersonalExpense[];

@@ -1,8 +1,15 @@
+import { useEffect } from 'react';
 import PersonalExpenseDashboard from '../Component/personalexpense/PersonalExpenseDashboard';
+import { useAppDispatch } from '../Redux/hooks';
+import { getCategories } from '../Redux/Reducers/CategoryReducers/getCategories';
+import store from '../Redux/Store';
+import { removeCategories } from '../Redux/slice/CategorySlice';
 
 
 
 const PersonalExpensePage = () => {
+
+  
     
 // uncomment the code below for allowing only authenticated users to access this page
 //     const [data, setData] = React.useState<string | null>(null);
@@ -28,6 +35,17 @@ const PersonalExpensePage = () => {
 // //       navigate("/login");
 // //     });
 // // }, [data, navigate]);
+const useDispatch=useAppDispatch();
+
+useEffect(()=>{
+  useDispatch(getCategories())
+
+  return ()=>{
+    useDispatch(removeCategories())
+  }
+})
+
+  
 
 
   return (

@@ -51,7 +51,8 @@ const LineChartData = [
   { date: "25/08", value: 170 },
 ];
 
-// ---- Component -------------------------------------------------------------
+
+
 const ExpenseCharts: React.FC = () => {
   // Normalize pie colors to match app palette but keep provided as fallback
   const pieData = (data ?? []).map((d) => ({
@@ -88,8 +89,8 @@ const ExpenseCharts: React.FC = () => {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(v: number, _n, p) =>
-                    [currency(v), p?.payload?.name ?? ""]
+                  formatter={(v: number | undefined) =>
+                    v !== undefined ? currency(v) : ""
                   }
                 />
                 <Legend verticalAlign="bottom" height={24} />
@@ -115,7 +116,9 @@ const ExpenseCharts: React.FC = () => {
                 <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip
-                  formatter={(v: number) => currency(v)}
+                  formatter={(v: number | undefined) =>
+                    v !== undefined ? currency(v) : ""
+                  }
                   labelFormatter={(label) => `Date: ${label}`}
                 />
                 <Line

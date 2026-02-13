@@ -1,68 +1,88 @@
 
 import AddIcon from '@mui/icons-material/Add';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
-import { useEffect, useMemo, useState } from 'react';
-import { useAppDispatch } from '../../Redux/hooks';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
 import getExpenses from '../../Redux/Reducers/PersonalExpenseReducers/getExpenses';
 import { PersonalExpense } from '../../Types/PersonalExpenseListType';
 import AddExpense from './AddExpense';
+import { ListItemIcon, ListItemText, MenuItem, MenuList, Paper } from '@mui/material';
+import { setPage, setSize } from '../../Redux/slice/PersonalExpenseSlice';
+import { deleteExpense } from '../../Redux/Reducers/PersonalExpenseReducers/deleteExpense';
 
-
-
-const categories = [
-  { id: "food", name: "Food", icon: "🍔", color: "#22c55e" },
-  { id: "travel", name: "Travel", icon: "✈️", color: "#06b6d4" },
-  // ...
-];
 const ExpenseList = () =>
- {
-  const [page, setPage] = useState(0); // 0-based
-  const [size, setSize] = useState(5);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalElements, setTotalElements] = useState(0);
-  const [expenseList,setExpenseList]=useState<PersonalExpense[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+{
+  const page = useAppSelector((state)=>state.personalExpenseReducer.queryParams.page) ?? 0;
+  const size = useAppSelector((state)=>state.personalExpenseReducer.queryParams.size) ?? 10;
+  const totalPages = useAppSelector((state)=>state.personalExpenseReducer.data?.data.page.totalPages) ?? 0;
+  const totalElements= useAppSelector((state)=>state.personalExpenseReducer.data?.data.page.totalElements) ?? 0;
+  const expenseList=useAppSelector((state)=>state.personalExpenseReducer.data?.data.content) ?? [];
+  const isLoading=useAppSelector((state)=>state.personalExpenseReducer.isLoading);
+  const isError = useAppSelector((state) => state.personalExpenseReducer.isError);
+  const error = useAppSelector((state) => state.personalExpenseReducer.message);  
   const dispatch = useAppDispatch();
+  const categories = useAppSelector((state) => state.categoryReducer.categories);
   const [modal,setModal]=useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const iconRef = useRef<SVGSVGElement | null>(null);
+
+  const [selectedExpenseId, setSelectedExpenseId] = useState<String | null>(null);
+  const [isEdit,setIsEdit]=useState(false);
+  const [editExpenseData,setEditExpenseData]=useState<PersonalExpense | null>(null);
 
   const changeModal= () =>{
     setModal(!modal);
   }
+
+  const resetEdit=()=>{
+    setIsEdit(false);
+    setEditExpenseData(null);
+  }
+
+  const toggleMenu = (expenseId: String | undefined) => {
+    if (!expenseId) return;
+    setSelectedExpenseId(prev => (prev === expenseId ? null : expenseId));
+  };
+
+  useEffect(() => {
+  if (!selectedExpenseId) return;
+
+  const handler = (e: MouseEvent) => {
+    const target = e.target as Node;
+
+    const clickedInsideMenu = menuRef.current?.contains(target);
+    const clickedOnIcon = iconRef.current?.contains(target);
+
+    if (!clickedInsideMenu && !clickedOnIcon) {
+      setSelectedExpenseId(null);
+    }
+  };
+
+  document.addEventListener("mousedown", handler);
+  return () => document.removeEventListener("mousedown", handler);
+}, [selectedExpenseId]);
+
   const canPrev = page > 0;
   const canNext = totalPages > 0 && page < totalPages - 1;
 
-  const fetchExpenses = async (page: number, size: number) => {
-    setIsLoading(true);
-    setError(null);
-    dispatch(getExpenses({ page, size }))
-      .unwrap()
-      .then((res) => {
-        const personalExpenseData : PersonalExpense[] = res.data.content
-        setSize(res.data.page.size);
-        setPage(res.data.page.number);
-        setTotalElements(res.data.page.totalElements);
-        setTotalPages(res.data.page.totalPages);
-        setExpenseList(personalExpenseData);
-      })
-      .catch((err) => {
-        setError("Failed to fetch expenses: " + err);
-        setExpenseList([]);
-      })
-      .finally(() => setIsLoading(false))
-      ;
-  };
+  const editExpense = (expense: PersonalExpense) => {
+    console.log("Editing expense:", expense);
+    setIsEdit(true);
+    setModal(true);
+    setEditExpenseData(expense);
+  }
 
-   useEffect(() => {
+ 
+  useEffect(() => {
     let mounted = true;
     (async () => {
       if (!mounted) return;
-      await fetchExpenses(page, size);
+      console.log("Fetching expenses for page:", page, "size:", size);
+      await dispatch(getExpenses());
     })();
     return () => {
       mounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, size]);
 
   const rows = useMemo(()=>expenseList, [expenseList]);
@@ -70,7 +90,6 @@ const ExpenseList = () =>
   const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(amount);
   const formatDate = (iso: string) => {
-    // Handles "2025-09-10T04:00:00.000+00:00" etc.
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return '—';
     return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
@@ -79,7 +98,7 @@ const ExpenseList = () =>
   return (
     <div>
       <div className='flex-1 w-[25%]'>
-            <AddExpense open={modal} onClose={changeModal} categories={categories}/>
+            <AddExpense open={modal} onClose={changeModal} categories={categories} isEdit={isEdit} onExitEdit={resetEdit} expense={isEdit ? editExpenseData : null} />
       </div>
       <div className="flex flex-col">
         <div className="-m-1.5 overflow-x-auto">
@@ -92,16 +111,15 @@ const ExpenseList = () =>
                   <input type="text" name="hs-table-search" id="hs-table-search" className="py-1.5 sm:py-2 px-3 ps-9 block w-full border-gray-200 shadow-2xs rounded-lg sm:text-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none" placeholder="Search Expense"/>
                   <div className="absolute inset-y-0 start-0 flex items-center pointer-events-none ps-3 text-zinc-400">
                     {/* Icon for search input */}
-                    <svg className="size-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg className="size-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="11" cy="11" r="8"></circle>
                       <path d="m21 21-4.3-4.3"></path>
                     </svg>
-                  </div>
-                  
+                  </div>  
                 </div>
                 <div onClick={()=> changeModal()} className='p-1 bg-[#009689] rounded-lg shadow-sm font-poppins text-small tracking-wide text-white flex items-center hover:bg-[#005a52] cursor-pointer'>
                   <AddIcon/>
-                    <button className=' p-1.5 '> Add Expense</button>
+                  <button className=' p-1.5 '> Add Expense</button>
                 </div>
                 <div className="ml-auto flex items-center gap-2">
                   <label className="text-sm text-gray-400">Rows:</label>
@@ -109,9 +127,7 @@ const ExpenseList = () =>
                     className="bg-[#121215] border border-gray-200 rounded px-2 py-1 text-sm text-white"
                     value={size}
                     onChange={(e) => {
-                      const v = Number(e.target.value);
-                      setPage(0);
-                      setSize(Number.isFinite(v) && v > 0 ? v : 5);
+                      dispatch(setSize(Number(e.target.value)));
                     }}
                   >
                     {[5, 10, 20].map((opt) => (
@@ -120,11 +136,10 @@ const ExpenseList = () =>
                   </select>
                 </div>
               </div>
-            <div className="overflow-hidden">
+            <div className="overflow-visible">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-[#121215]">
                   <tr>
-                    
                     <th scope="col" className="px-6 py-3 text-start text-xs font-medium text-gray-400 uppercase">Item</th>
                     <th scope="col" className="px-6 py-3 text-start text-xs font-medium text-gray-400 uppercase">Category</th>
                     <th scope="col" className="px-6 py-3 text-start text-xs font-medium text-gray-400 uppercase">Date</th>
@@ -139,17 +154,17 @@ const ExpenseList = () =>
                         <td colSpan={6} className="px-6 py-6 text-center text-gray-400">Loading…</td>
                       </tr>
                   )}
-                  {!isLoading && error && (
+                  {!isLoading && isError && (
                       <tr>
                         <td colSpan={6} className="px-6 py-6 text-center text-red-400">{error}</td>
                       </tr>
                   )}
-                  {!isLoading && !error && rows.length === 0 && (
+                  {!isLoading && !isError && rows.length === 0 && (
                       <tr>
                         <td colSpan={6} className="px-6 py-6 text-center text-gray-400">No expenses found.</td>
                       </tr>
                     )}
-                  {!isLoading && !error && rows.map((expense)=>{
+                  {!isLoading && !isError && rows.map((expense)=>{
                     return (<tr key={expense.expenseId} className='bg-[#17171c] hover:bg-[#1f1f24] transition-colors duration-200'>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
                       <div>
@@ -165,9 +180,41 @@ const ExpenseList = () =>
                         <span className="text-green-500">Yes</span>
                       ) : ( <span className="text-red-500">No</span>)}
                     </td>
-                    <td className="px-6 py-3 text-base tracking-wide text-white">
-                      <MoreHorizIcon className="cursor-pointer hover:text-gray-400" />
+                    
+                    <td className="px-6 py-3 text-base tracking-wide text-white relative " >
+                      
+                      <MoreHorizIcon ref={iconRef} onClick={()=>toggleMenu(expense?.expenseId)}
+                        className="cursor-pointer hover:text-gray-400" 
+                      />
+
+                      { 
+                        selectedExpenseId==expense.expenseId && (
+                        <Paper ref={menuRef} sx={{ width:320,maxWidth: '100%',backgroundColor:'#2a2a30',position:'absolute',mt:1,right:4,rounded:2,zIndex:10 }}>
+                          <MenuList>
+                            <MenuItem sx={{":hover":{
+                              backgroundColor:'#3d3d45',
+                            }, rounded:2}} onClick={()=>editExpense(expense)}>
+                              <ListItemIcon>
+                                ✏️
+                              </ListItemIcon>
+                              <ListItemText>Edit</ListItemText>
+                            </MenuItem>
+                            <MenuItem sx={{":hover":{
+                              backgroundColor:'#3d3d45',
+                            }, rounded:2}} onClick={()=>dispatch(deleteExpense({id: expense?.expenseId}))}>
+                              <ListItemIcon>
+                                🗑️
+                              </ListItemIcon>
+                              <ListItemText>Delete</ListItemText>
+                            </MenuItem>
+                          </MenuList>
+                            
+                        </Paper>
+                        )
+                      }
+
                     </td>
+                      
                   </tr>
                   )
                 })}
@@ -175,7 +222,7 @@ const ExpenseList = () =>
                 </tbody>
               </table>
             </div>
-            <div className="flex items-center justify-between px-4 py-3 bg-[#121215]">
+            <div className="flex items-center justify-between px-4 py-3 bg-[#121215] z-0">
                 <div className="text-sm text-gray-400">
                   Page <span className="text-white">{(page ?? 0) + 1}</span> of{" "}
                   <span className="text-white">{totalPages}</span> •{" "}
@@ -185,28 +232,45 @@ const ExpenseList = () =>
                 <div className="flex items-center gap-2">
                   <button
                     className="px-3 py-1 rounded border border-gray-600 text-gray-200 disabled:opacity-50"
-                    onClick={() => setPage(0)}
+                    onClick={() => dispatch(setPage(0))}
                     disabled={!canPrev}
                   >
                     First
                   </button>
                   <button
                     className="px-3 py-1 rounded border border-gray-600 text-gray-200 disabled:opacity-50"
-                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    onClick={() => {
+                      let prevpage = Math.max(0, page - 1);
+                      dispatch(setPage(prevpage));
+                    //
+                      // setPage((p) => Math.max(0, p - 1))
+                    }}
                     disabled={!canPrev}
                   >
                     Prev
                   </button>
                   <button
                     className="px-3 py-1 rounded border border-gray-600 text-gray-200 disabled:opacity-50"
-                    onClick={() => setPage((p) => (page!=totalPages ?Math.min(p+1,totalPages) : p))}
+                    onClick={() => 
+                      {
+                        let nextpage = page!=totalPages ?Math.min(page+1,totalPages-1) : page;
+                        dispatch(setPage(nextpage));
+                        // setPage((p) => (page!=totalPages ?Math.min(p+1,totalPages) : p))
+                      }
+                      }
                     disabled={!canNext}
                   >
                     Next
                   </button>
                   <button
                     className="px-3 py-1 rounded border border-gray-600 text-gray-200 disabled:opacity-50"
-                    onClick={() => setPage(Math.max(0, totalPages - 1))}
+                    onClick={() => {
+                      let lastpage = Math.max(0, totalPages - 1);
+                      dispatch(setPage(lastpage));
+                      // setPage(Math.max(0, totalPages - 1))
+                      }
+                    }
+
                     disabled={!canNext}
                   >
                     Last

@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { AddExpensePayload, PersonalExpense } from "../../Types/PersonalExpenseListType";
+
+import { addExpense } from "../../Redux/Reducers/PersonalExpenseReducers/addExpense";
+import { useAppDispatch } from "../../Redux/hooks";
+import { CategoryType } from "../../Redux/slice/CategorySlice";
+import { editExpense } from "../../Redux/Reducers/PersonalExpenseReducers/editExpense";
 
 function classNames(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
@@ -8,9 +14,12 @@ function classNames(...c: (string | false | null | undefined)[]) {
 interface AddExpenseProps {
   open: boolean;
   onClose: () => void;
-  categories: { id: string; name: string; icon: string; color: string }[];
+  categories: CategoryType[];
   currency?: string; // default "CAD"
-  defaultDate?: string; // ISO "YYYY-MM-DD" (fallback: today)
+  defaultDate?: string;  // ISO "YYYY-MM-DD" (fallback: today)
+  isEdit: Boolean;
+  onExitEdit?:()=>void;
+  expense:PersonalExpense | null; 
 }
 
 function AddExpense({
@@ -19,28 +28,60 @@ function AddExpense({
   categories,
   currency = "CAD",
   defaultDate,
+  isEdit,
+  onExitEdit,
+  expense
 }: AddExpenseProps) {
-  const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("");
-  const [date, setDate] = useState(defaultDate || new Date().toISOString().slice(0, 10));
   const [title, setTitle] = useState("");
-  const [note, setNote] = useState("");
-  const [receipt, setReceipt] = useState(false);
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState(0);
+  const [category, setCategory] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [isReceipt, setIsReceipt] = useState(false);
+  const [receipt, setReceipt] = useState("" as String | null);
+
+  const dispatch = useAppDispatch();
 
   const titleRef = useRef<HTMLInputElement | null>(null);
-  const valid = Boolean(amount && category && title);
+  const valid = Boolean(amount!=0 && category && title);
 
-  // Focus first field when modal opens
+  
+  const resetAndClose= ()=>{
+    setAmount(0);
+    setCategory("");
+    setDate(defaultDate || new Date().toISOString().slice(0, 10));
+    setTitle("");
+    setDescription("");
+    setIsReceipt(false);
+    setReceipt("");
+    onExitEdit?.();
+    onClose();
+  }
   useEffect(() => {
     if (open && titleRef.current) {
       requestAnimationFrame(() => titleRef.current?.focus());
     }
   }, [open]);
 
+  useEffect(()=>{
+    if(isEdit && expense){
+      setTitle(expense.title);
+      setDescription(expense.description ?? "");
+      setAmount(expense.amount);
+      setCategory(expense.categoryId);
+      setDate(expense.expenseDate.replace(/"/g, ""));
+      setIsReceipt(expense.isReceipt);
+      setReceipt(expense.receiptUrl);
+    }
+
+  }, [open,isEdit, expense]);
+
   // Close on ESC
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose?.();
+   const onKey = (e: KeyboardEvent) => {
+    if (e.key === "Escape") resetAndClose();
+  };  
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
@@ -57,15 +98,40 @@ function AddExpense({
 
   const submit = () => {
     if (!valid) return;
-    onClose?.();
+    // onClose?.();
     // Reset
-    setAmount("");
+
+    const expenseData:AddExpensePayload = {
+      ...(isEdit && expense ? { expenseId: expense.expenseId } : {}),
+      title:title ?? "",
+      amount:amount ?? 0,
+      categoryId: category ?? "",
+      expenseDate: date,
+      description: description ?? "",
+      isReceipt: isReceipt,
+    }
+    if(isEdit){
+      console.log("Editing expense:", expenseData);
+      dispatch(editExpense(expenseData));
+      onExitEdit?.();
+    }
+    else{
+      console.log("Adding expense:", expenseData);
+      dispatch(addExpense(expenseData));
+    }
+    // dispatch(addExpense(expenseData));
+
+    setAmount(0);
     setCategory("");
     setDate(defaultDate || new Date().toISOString().slice(0, 10));
     setTitle("");
-    setNote("");
-    setReceipt(false);
+    setDescription("");
+    setIsReceipt(false);
+    setReceipt("");
+    onClose();
+    
   };
+
 
   // Animation variants
   const overlayVariants = {
@@ -89,7 +155,7 @@ function AddExpense({
           <motion.button
             aria-label="Close add expense"
             className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-            onClick={onClose}
+            onClick={resetAndClose}
             initial="hidden"
             animate="visible"
             exit="exit"
@@ -114,7 +180,7 @@ function AddExpense({
                 Add Expense
               </h3>
               <button
-                onClick={onClose}
+                onClick={resetAndClose}
                 className="rounded-lg px-2 py-1 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
               >
                 ✕
@@ -128,7 +194,7 @@ function AddExpense({
                 <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Title</label>
                 <input
                   ref={titleRef}
-                  value={title}
+                  value={title?? ""}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g., Lunch at Subway"
                   className="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-teal-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
@@ -142,9 +208,10 @@ function AddExpense({
                     Amount ({currency})
                   </label>
                   <input
+                    type="number"
                     inputMode="decimal"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+                    value={amount??0}
+                    onChange={(e) => setAmount(e.target.valueAsNumber)}
                     placeholder="0.00"
                     className="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-teal-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
                   />
@@ -154,42 +221,47 @@ function AddExpense({
                   <input
                     type="date"
                     value={date}
-                    onChange={(e) => setDate(e.target.value)}
+                    onChange={(e) => setDate(e.target.value.replace(/"/g, ""))}
                     className="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-teal-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
                   />
                 </div>
               </div>
 
               {/* Categories grid */}
-              <div>
+                <div>
                 <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Category</label>
-                <div className="mt-1 grid grid-cols-3 gap-2 sm:grid-cols-6">
+                <div className="mt-1 grid grid-cols-3 gap-2 sm:grid-cols-4">
                   {categories.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => setCategory(c.id)}
-                      className={classNames(
-                        "flex items-center justify-center gap-1 rounded-xl border px-2 py-2 text-sm",
-                        category === c.id
-                          ? "border-transparent bg-teal-600 text-white"
-                          : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300"
-                      )}
-                      aria-pressed={category === c.id}
-                    >
-                      <span>{c.icon}</span>
-                      <span className="hidden sm:inline">{c.name}</span>
-                    </button>
+                  <button
+                    key={c.categoryId}
+                    type="button"
+                    onClick={() => setCategory(c.categoryId)}
+                    className={classNames(
+                    "flex flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-sm transition-colors w-full focus:outline-none overflow-hidden",
+                    category === c.categoryId
+                      ? "border-teal-600 text-teal-600 dark:border-teal-400 dark:text-teal-300"
+                      : "border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                    )}
+                    style={{
+                    backgroundColor: c.categoryColor + "30",
+                    ...(category === c.categoryId
+                      ? { boxShadow: "0 0 0 2px #14b8a6" }
+                      : {}),
+                    }}
+                    aria-pressed={category === c.categoryId}
+                  >
+                    <span className="text-xs font-medium truncate">{c.categoryName}</span>
+                  </button>
                   ))}
                 </div>
-              </div>
+                </div>
 
               {/* Notes */}
               <div>
                 <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Notes</label>
                 <textarea
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                   placeholder="Optional"
                   className="mt-1 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-teal-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
                 />
@@ -199,8 +271,8 @@ function AddExpense({
               <label className="inline-flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
                 <input
                   type="checkbox"
-                  checked={receipt}
-                  onChange={(e) => setReceipt(e.target.checked)}
+                  checked={isReceipt}
+                  onChange={(e) => setIsReceipt(e.target.checked)}
                 />
                 I have a receipt
               </label>
@@ -208,7 +280,7 @@ function AddExpense({
               {/* Actions */}
               <div className="mt-2 flex justify-end gap-2">
                 <button
-                  onClick={onClose}
+                  onClick={resetAndClose}
                   className="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300"
                 >
                   Cancel

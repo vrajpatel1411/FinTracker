@@ -10,13 +10,9 @@ function ExpenseListSkeleton() {
   );
 }
 
-
-
-
 const PersonalExpenseDashboard = () => {
-  
   return (
-    <div className='flex flex-col gap-4 p-4 w-[100%]'>
+    <div className='flex flex-col gap-4 p-4'>
         <div>
           <DashBoardCards />
         </div>
@@ -24,7 +20,7 @@ const PersonalExpenseDashboard = () => {
           <ExpenseCharts  />
         </div>
         <Suspense fallback={<ExpenseListSkeleton />}>
-            <ExpenseList  />
+            <ExpenseList />
         </Suspense>
     </div>
   )
