@@ -4,7 +4,6 @@ package org.vrajpatel.personalexpense.Controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 
 import org.springframework.data.web.PagedResourcesAssembler;
@@ -13,10 +12,13 @@ import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.vrajpatel.personalexpense.Exception.UnAuthorizedException;
+import org.vrajpatel.personalexpense.Exception.Types.AddExpenseException;
+import org.vrajpatel.personalexpense.Exception.Types.UnAuthorizedException;
 import org.vrajpatel.personalexpense.Service.PersonalExpenseService;
 
-import org.vrajpatel.personalexpense.responseDto.AddExpenseDto;
+import org.vrajpatel.personalexpense.model.PersonalExpenseModel;
+import org.vrajpatel.personalexpense.requestDto.PatchExpenseDTO;
+import org.vrajpatel.personalexpense.requestDto.AddExpenseDto;
 import org.vrajpatel.personalexpense.responseDto.GenericResponseDTO;
 import org.vrajpatel.personalexpense.responseDto.PersonalExpenseDto;
 
@@ -36,13 +38,16 @@ public class PersonalExpenseController {
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "10") int size,
             PagedResourcesAssembler<PersonalExpenseDto> assembler
-    ) {
+    ) throws UnAuthorizedException {
+        if(userEmail.isEmpty() || userId.isEmpty() ) {
+            throw new UnAuthorizedException("Unauthorized User");
+        }
         if (page < 0 || size <= 0 || size > 100) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(GenericResponseDTO.error("Invalid pagination parameters"));
         }
         try {
-            Page<PersonalExpenseDto> data = personalExpenseService.findAll(page, size);
+            Page<PersonalExpenseDto> data = personalExpenseService.findAll(userId,page, size);
             PagedModel<EntityModel<PersonalExpenseDto>> model = assembler.toModel(data);
             return ResponseEntity.ok(
                     GenericResponseDTO.success(model)
@@ -54,24 +59,66 @@ public class PersonalExpenseController {
         }
     }
 
-    @PostMapping()
-    public ResponseEntity<GenericResponseDTO<String>> addExpense(@RequestHeader("userEmail") String userEmail,
-                                                                 @RequestHeader("userId") String userId,@RequestBody AddExpenseDto expense) throws UnAuthorizedException {
-
+    @PostMapping("/")
+    public ResponseEntity<GenericResponseDTO<PersonalExpenseDto>> addExpense(@RequestHeader("userEmail") String userEmail,
+                                                                 @RequestHeader("userId") String userId,@RequestBody AddExpenseDto expense) throws AddExpenseException, UnAuthorizedException {
         if(userEmail.isEmpty() || userId.isEmpty() ) {
              throw new UnAuthorizedException("Unauthorized User");
         }
-
         try{
-            boolean isAdded = personalExpenseService.addExpense(userEmail,userId,expense);
-            if(isAdded) {
-                GenericResponseDTO<String> response = GenericResponseDTO.success("Added expense");
+            PersonalExpenseDto expenseAdded = personalExpenseService.addExpense(userEmail,userId,expense);
+            if(expenseAdded==null) {
+                throw new NullPointerException("Error Adding Expense");
+            }
+            return ResponseEntity.ok(GenericResponseDTO.success(expenseAdded));
+
+        }catch(Exception e){
+            throw new AddExpenseException("Error Adding expense : "+e.getMessage());
+        }
+    }
+
+    @PatchMapping("/expense/{id}")
+    public ResponseEntity<GenericResponseDTO<PersonalExpenseDto>> updateExpense(@PathVariable("id") String expenseId, @RequestHeader("userEmail") String userEmail,
+                                                                    @RequestHeader("userId") String userId, @RequestBody PatchExpenseDTO expense) throws Exception,UnAuthorizedException{
+        if(userEmail.isEmpty() || userId.isEmpty() ) {
+            throw new UnAuthorizedException("User with Email "+ userEmail+" and user id "+ userId+" is not authorized to access");
+        }
+        if(expenseId.isEmpty() ) {
+            throw new NullPointerException("Expense Id is null or empty");
+        }
+        try {
+
+            PersonalExpenseDto response = personalExpenseService.updateExpense(expenseId, expense);
+
+            if (response == null) {
+                throw new NullPointerException("Error updating expense : "+expenseId);
+            }
+
+            return ResponseEntity.ok(GenericResponseDTO.success(response));
+        }
+        catch(Exception e){
+            throw new Exception(e.getMessage() + " Something went wrong.");
+        }
+    }
+
+    @DeleteMapping("/expense/{id}")
+    public ResponseEntity<GenericResponseDTO<String>> deleteExpense(@PathVariable("id") String expenseId) throws Exception{
+        if(expenseId.isEmpty()) {
+            throw new NullPointerException("Expense Id is null or empty");
+        }
+        try {
+            Boolean status = personalExpenseService.deleteExpense(expenseId);
+            if(status) {
+                GenericResponseDTO<String> response = GenericResponseDTO.success("Deleted expense");
                 return ResponseEntity.ok(response);
             }
-        }catch(Exception e){
-            throw new UnAuthorizedException("Unauthorized User");
+            else{
+                GenericResponseDTO<String> response = GenericResponseDTO.error("Not Deleted");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            }
         }
-        GenericResponseDTO<String> response = GenericResponseDTO.error("Error Adding expense");
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        catch(Exception e){
+            throw new Exception(e.getMessage() + " Something went wrong.");
+        }
     }
 }

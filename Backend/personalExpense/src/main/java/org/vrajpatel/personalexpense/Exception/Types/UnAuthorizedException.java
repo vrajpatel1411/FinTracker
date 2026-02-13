@@ -1,4 +1,4 @@
-package org.vrajpatel.personalexpense.Exception;
+package org.vrajpatel.personalexpense.Exception.Types;
 
 public class UnAuthorizedException extends Exception {
     public UnAuthorizedException(String message) {

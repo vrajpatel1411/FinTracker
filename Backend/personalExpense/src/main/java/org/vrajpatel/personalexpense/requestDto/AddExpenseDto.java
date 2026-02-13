@@ -1,12 +1,12 @@
-package org.vrajpatel.personalexpense.responseDto;
+package org.vrajpatel.personalexpense.requestDto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.Date;
-import java.util.UUID;
 
 @Data
 public class AddExpenseDto {
@@ -21,6 +21,7 @@ public class AddExpenseDto {
     private BigDecimal amount;
 
     @NotNull
+    @JsonFormat(shape = JsonFormat.Shape.STRING,pattern = "yyyy-MM-dd")
     private Date expenseDate;
 
     @NotNull

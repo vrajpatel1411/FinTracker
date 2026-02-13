@@ -34,4 +34,17 @@ public class PersonalExpenseDto implements Serializable {
     private UUID receiptId;
 
     private String receiptUrl;
+
+    public PersonalExpenseDto(UUID expenseId, String title, String description,BigDecimal amount,Date expenseDate, UUID categoryId, String categoryName, String categoryColor, UUID receiptId, String receiptUrl) {
+        this.amount = amount;
+        this.categoryColor = categoryColor;
+        this.categoryId = categoryId;
+        this.categoryName = categoryName;
+        this.description = description;
+        this.expenseDate = expenseDate;
+        this.expenseId = expenseId;
+        this.receiptId = receiptId;
+        this.receiptUrl = receiptUrl;
+        this.title = title;
+    }
 }

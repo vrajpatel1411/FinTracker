@@ -6,14 +6,15 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.UUID;
 
-@Data
 @Entity
 @Table(name="personal_expenses")
+@Data
 public class PersonalExpenseModel {
 
     @Id
@@ -24,8 +25,13 @@ public class PersonalExpenseModel {
     @Column(name="title")
     private String title;
 
-    @Column(name="user_id")
+    @Column(name="user_id", insertable=false, updatable=false)
     private UUID userId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @JsonIgnore
+    private User user;
 
     @Column(name="description")
     private String description;
@@ -37,13 +43,16 @@ public class PersonalExpenseModel {
     private Date expenseDate;
 
     @Column(name="created_at")
-    private Date createdAt;
+    private Date createdAt=new Date();
 
     @Column(name="updated_at")
-    private Date updatedAt;
+    private Date updatedAt=new Date();
+
 
     @Column(name="deleted")
-    private Boolean deleted;
+    private Boolean deleted=false;
+
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="category_id")
@@ -55,4 +64,20 @@ public class PersonalExpenseModel {
     @JsonIgnore
     private receiptModel receipt;
 
+    @Override
+    public String toString() {
+        return "PersonalExpenseModel{" +
+                "amount=" + amount +
+                ", expenseId=" + expenseId +
+                ", title='" + title + '\'' +
+                ", userId=" + userId +
+                ", description='" + description + '\'' +
+                ", expenseDate=" + expenseDate +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
+                ", deleted=" + deleted +
+                ", category=" + category +
+                ", receipt=" + receipt +
+                '}';
+    }
 }
