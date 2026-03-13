@@ -14,7 +14,8 @@ public class RedisCacheMangerCustomBuilder {
     public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
         return (builder)->{
             builder
-                    .withCacheConfiguration("personalExpenses", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(1)));
+                    .withCacheConfiguration("personalExpenses", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(30)))
+                    .withCacheConfiguration("analytics", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(30)));
 
         };
     }

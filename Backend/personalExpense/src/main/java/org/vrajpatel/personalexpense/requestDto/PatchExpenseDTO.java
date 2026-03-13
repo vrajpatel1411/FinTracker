@@ -1,6 +1,7 @@
 package org.vrajpatel.personalexpense.requestDto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -11,18 +12,17 @@ import java.util.UUID;
 @Data
 public class PatchExpenseDTO {
     private String title;
-
     private String description;
-
     private BigDecimal amount;
-
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate expenseDate;
-//    private Date expenseDate;
-
     private UUID categoryId;
+    @JsonProperty("isReceipt")
+    private boolean hasReceipt;
+    @JsonProperty("deleteReceipt")
+    private boolean deleteReceipt;
+    private String fileName;
+    private String fileType;
+    private Integer fileLength;
 
-    private UUID receiptId;
-
-    private String receiptUrl;
 }

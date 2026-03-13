@@ -8,22 +8,18 @@ import org.vrajpatel.personalexpense.model.CategoriesModel;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.UUID;
 
 @Data
 public class PersonalExpenseDto implements Serializable {
-
-
     private UUID expenseId;
-
     private String title;
-
     private String description;
-
     private BigDecimal amount;
 
-    private Date expenseDate;
+    private LocalDate expenseDate;
 
     private UUID categoryId;
 
@@ -34,8 +30,8 @@ public class PersonalExpenseDto implements Serializable {
     private UUID receiptId;
 
     private String receiptUrl;
-
-    public PersonalExpenseDto(UUID expenseId, String title, String description,BigDecimal amount,Date expenseDate, UUID categoryId, String categoryName, String categoryColor, UUID receiptId, String receiptUrl) {
+    public PersonalExpenseDto() {}
+    public PersonalExpenseDto(UUID expenseId, String title, String description,BigDecimal amount,LocalDate expenseDate, UUID categoryId, String categoryName, String categoryColor, UUID receiptId, String receiptUrl) {
         this.amount = amount;
         this.categoryColor = categoryColor;
         this.categoryId = categoryId;

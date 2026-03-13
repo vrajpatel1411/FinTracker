@@ -4,12 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -40,13 +37,13 @@ public class PersonalExpenseModel {
     private BigDecimal amount;
 
     @Column(name="expense_date")
-    private Date expenseDate;
+    private LocalDate expenseDate;
 
     @Column(name="created_at")
-    private Date createdAt=new Date();
+    private LocalDate createdAt=LocalDate.now();
 
     @Column(name="updated_at")
-    private Date updatedAt=new Date();
+    private LocalDate updatedAt=LocalDate.now();
 
 
     @Column(name="deleted")
@@ -62,7 +59,7 @@ public class PersonalExpenseModel {
     @OneToOne(fetch=FetchType.LAZY)
     @JoinColumn(name="receipt_id")
     @JsonIgnore
-    private receiptModel receipt;
+    private ReceiptModel receipt;
 
     @Override
     public String toString() {
