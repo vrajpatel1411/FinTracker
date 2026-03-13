@@ -1,6 +1,6 @@
 package org.vrajpatel.fintrackergateway.ResponseDto;
 
-import org.springframework.boot.autoconfigure.neo4j.Neo4jProperties;
+
 
 import java.util.UUID;
 

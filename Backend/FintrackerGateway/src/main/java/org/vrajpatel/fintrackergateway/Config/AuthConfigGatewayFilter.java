@@ -1,15 +1,12 @@
 package org.vrajpatel.fintrackergateway.Config;
 
-import org.apache.http.HttpHeaders;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
-import org.springframework.http.HttpCookie;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseCookie;
+import org.springframework.http.*;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -48,7 +45,6 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
 
             logger.info("Inside AuthConfigGatewayFilter");
 
-
             String authHeader = null;
             try {
                 if (exchange.getRequest().getCookies().getFirst("accessToken") != null) {
@@ -58,7 +54,7 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
             } catch (Exception e) {
                 logger.error("Error extracting JWT token: {}", e.getMessage());
             }
-            WebClient webClient = WebClient.builder().baseUrl(validationUrl).defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            WebClient webClient = WebClient.builder().baseUrl(validationUrl).defaultHeader(org.springframework.http.HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .build();
             if (authHeader == null || authHeader.isEmpty()) {
                 logger.info("Auth header is empty");
