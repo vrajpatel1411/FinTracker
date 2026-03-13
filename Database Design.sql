@@ -113,6 +113,8 @@ CREATE TABLE IF NOT EXISTS receipts (
 );
 
 
+
+
 CREATE TABLE categories (
     category_id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
@@ -254,64 +256,129 @@ BEGIN;
 INSERT INTO personal_expenses
   (user_id, title, description, category_id, amount, expense_date, deleted)
 VALUES
--- September 2025
-('d831c386-e080-42bd-9e5d-bee527908807','Morning Coffee','Latte before work',
- '4cb2070f-343e-4795-b8f0-1367cf12fc71',4.50,'2025-09-10',FALSE), -- Entertainment
-('d831c386-e080-42bd-9e5d-bee527908807','No Frills Grocery','Weekly produce, milk, eggs',
- 'f530b9ff-97e0-4398-8de7-84be585d9352',85.20,'2025-09-09',FALSE), -- Grocery
-('d831c386-e080-42bd-9e5d-bee527908807','Thai Express Dinner','Pad thai + drink',
- '4cb2070f-343e-4795-b8f0-1367cf12fc71',22.99,'2025-09-08',FALSE), -- Entertainment (dining out)
-('d831c386-e080-42bd-9e5d-bee527908807','Transit Tickets','Two bus rides',
- '03cccf07-a5f4-4ea7-9e61-036d0b489296',3.40,'2025-09-07',FALSE), -- Travel
-('d831c386-e080-42bd-9e5d-bee527908807','Shell Gas','Full tank',
- '03cccf07-a5f4-4ea7-9e61-036d0b489296',58.76,'2025-09-06',FALSE), -- Travel
-('d831c386-e080-42bd-9e5d-bee527908807','Hydro One Bill','Electricity – Aug cycle',
- 'ae58f4d1-bb49-4282-a821-f3d7b714f0a9',121.50,'2025-09-05',FALSE), -- Bills
-('d831c386-e080-42bd-9e5d-bee527908807','Home Internet','Monthly plan',
- 'ae58f4d1-bb49-4282-a821-f3d7b714f0a9',70.00,'2025-09-03',FALSE), -- Bills
-('d831c386-e080-42bd-9e5d-bee527908807','Mobile Plan','Monthly plan',
- 'ae58f4d1-bb49-4282-a821-f3d7b714f0a9',55.00,'2025-09-02',FALSE), -- Bills
-('d831c386-e080-42bd-9e5d-bee527908807','September Rent','Apartment rent',
- 'ae58f4d1-bb49-4282-a821-f3d7b714f0a9',950.00,'2025-09-01',FALSE), -- Bills
-('d831c386-e080-42bd-9e5d-bee527908807','Netflix','Monthly subscription',
- 'ae58f4d1-bb49-4282-a821-f3d7b714f0a9',14.99,'2025-09-01',FALSE), -- Bills
 
--- August 2025
-('d831c386-e080-42bd-9e5d-bee527908807','Costco Grocery','Staples & snacks',
- 'f530b9ff-97e0-4398-8de7-84be585d9352',96.73,'2025-08-29',FALSE), -- Grocery
-('d831c386-e080-42bd-9e5d-bee527908807','IMAX Movie','Evening show',
- '4cb2070f-343e-4795-b8f0-1367cf12fc71',27.50,'2025-08-27',FALSE), -- Entertainment
-('d831c386-e080-42bd-9e5d-bee527908807','Clinic Visit','General checkup',
- '1420452b-8093-4dfc-9e2e-c14958edfa2b',35.00,'2025-08-25',FALSE), -- Health
-('d831c386-e080-42bd-9e5d-bee527908807','Uber to Downtown','Evening ride',
- '03cccf07-a5f4-4ea7-9e61-036d0b489296',12.80,'2025-08-22',FALSE), -- Travel
-('d831c386-e080-42bd-9e5d-bee527908807','Amazon Purchase','USB-C hub',
- '4cb2070f-343e-4795-b8f0-1367cf12fc71',21.49,'2025-08-18',FALSE), -- Entertainment (shopping)
-('d831c386-e080-42bd-9e5d-bee527908807','Cafe Stop','Latte + croissant',
- '4cb2070f-343e-4795-b8f0-1367cf12fc71',7.25,'2025-08-15',FALSE), -- Entertainment
-('d831c386-e080-42bd-9e5d-bee527908807','Hydro One Bill','Electricity – Jul cycle',
- 'ae58f4d1-bb49-4282-a821-f3d7b714f0a9',118.20,'2025-08-12',FALSE), -- Bills
-('d831c386-e080-42bd-9e5d-bee527908807','Spotify','Monthly subscription',
- 'ae58f4d1-bb49-4282-a821-f3d7b714f0a9',10.99,'2025-08-10',FALSE), -- Bills
-('d831c386-e080-42bd-9e5d-bee527908807','Gym Membership','Monthly fee',
- '1420452b-8093-4dfc-9e2e-c14958edfa2b',39.99,'2025-08-06',FALSE), -- Health
-('d831c386-e080-42bd-9e5d-bee527908807','August Rent','Apartment rent',
- 'ae58f4d1-bb49-4282-a821-f3d7b714f0a9',950.00,'2025-08-01',FALSE), -- Bills
+-- ── September 2025 ──────────────────────────────────────────
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Morning Coffee',    'Latte before work',
+ '0cb658ce-ca8a-4a6d-a254-b4cf992081a7', 4.50,   '2025-09-10', FALSE), -- Entertainment
 
--- July 2025
-('d831c386-e080-42bd-9e5d-bee527908807','Metro Grocery','Weekly essentials',
- 'f530b9ff-97e0-4398-8de7-84be585d9352',75.31,'2025-07-28',FALSE), -- Grocery
-('d831c386-e080-42bd-9e5d-bee527908807','Road Trip Gas','Weekend drive',
- '03cccf07-a5f4-4ea7-9e61-036d0b489296',62.44,'2025-07-26',FALSE), -- Travel
-('d831c386-e080-42bd-9e5d-bee527908807','Provincial Park Pass','Day pass + parking',
- '03cccf07-a5f4-4ea7-9e61-036d0b489296',18.00,'2025-07-22',FALSE), -- Travel
-('d831c386-e080-42bd-9e5d-bee527908807','Shoppers Drug Mart','Vitamins & toiletries',
- '1420452b-8093-4dfc-9e2e-c14958edfa2b',22.67,'2025-07-19',FALSE), -- Health
-('d831c386-e080-42bd-9e5d-bee527908807','Hydro One Bill','Electricity – Jun cycle',
- 'ae58f4d1-bb49-4282-a821-f3d7b714f0a9',115.90,'2025-07-15',FALSE), -- Bills
-('d831c386-e080-42bd-9e5d-bee527908807','Birthday Gift','Gift for friend',
- '4cb2070f-343e-4795-b8f0-1367cf12fc71',30.00,'2025-07-12',FALSE), -- Entertainment (gifts)
-('d831c386-e080-42bd-9e5d-bee527908807','Uniqlo T-Shirt','Summer clothing',
- '4cb2070f-343e-4795-b8f0-1367cf12fc71',45.00,'2025-07-05',FALSE), -- Entertainment (shopping)
-('d831c386-e080-42bd-9e5d-bee527908807','July Rent','Apartment rent',
- 'ae58f4d1-bb49-4282-a821-f3d7b714f0a9',950.00,'2025-07-01',FALSE); -- Bills
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'No Frills Grocery', 'Weekly produce, milk, eggs',
+ '9db88be3-460c-4802-a0e6-57500444a1e4', 85.20,  '2025-09-09', FALSE), -- Grocery
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Thai Express Dinner','Pad thai + drink',
+ '0cb658ce-ca8a-4a6d-a254-b4cf992081a7', 22.99,  '2025-09-08', FALSE), -- Entertainment
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Transit Tickets',   'Two bus rides',
+ 'c2deac5b-6de2-40fe-b89c-5066641e885e', 3.40,   '2025-09-07', FALSE), -- Travel
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Shell Gas',         'Full tank',
+ 'c2deac5b-6de2-40fe-b89c-5066641e885e', 58.76,  '2025-09-06', FALSE), -- Travel
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Hydro One Bill',    'Electricity – Aug cycle',
+ '2a69d5a7-5f3a-4718-bd84-ecc1f18f2b30', 121.50, '2025-09-05', FALSE), -- Bills
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Home Internet',     'Monthly plan',
+ '2a69d5a7-5f3a-4718-bd84-ecc1f18f2b30', 70.00,  '2025-09-03', FALSE), -- Bills
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Mobile Plan',       'Monthly plan',
+ '2a69d5a7-5f3a-4718-bd84-ecc1f18f2b30', 55.00,  '2025-09-02', FALSE), -- Bills
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'September Rent',    'Apartment rent',
+ '2a69d5a7-5f3a-4718-bd84-ecc1f18f2b30', 950.00, '2025-09-01', FALSE), -- Bills
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Netflix',           'Monthly subscription',
+ '2a69d5a7-5f3a-4718-bd84-ecc1f18f2b30', 14.99,  '2025-09-01', FALSE), -- Bills
+
+-- ── August 2025 ─────────────────────────────────────────────
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Costco Grocery',    'Staples & snacks',
+ '9db88be3-460c-4802-a0e6-57500444a1e4', 96.73,  '2025-08-29', FALSE), -- Grocery
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'IMAX Movie',        'Evening show',
+ '0cb658ce-ca8a-4a6d-a254-b4cf992081a7', 27.50,  '2025-08-27', FALSE), -- Entertainment
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Clinic Visit',      'General checkup',
+ '0e7c72aa-eeb7-4a91-a9a5-41b26ed9a78a', 35.00,  '2025-08-25', FALSE), -- Health
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Uber to Downtown',  'Evening ride',
+ 'c2deac5b-6de2-40fe-b89c-5066641e885e', 12.80,  '2025-08-22', FALSE), -- Travel
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Amazon Purchase',   'USB-C hub',
+ '0cb658ce-ca8a-4a6d-a254-b4cf992081a7', 21.49,  '2025-08-18', FALSE), -- Entertainment
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Cafe Stop',         'Latte + croissant',
+ '0cb658ce-ca8a-4a6d-a254-b4cf992081a7', 7.25,   '2025-08-15', FALSE), -- Entertainment
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Hydro One Bill',    'Electricity – Jul cycle',
+ '2a69d5a7-5f3a-4718-bd84-ecc1f18f2b30', 118.20, '2025-08-12', FALSE), -- Bills
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Spotify',           'Monthly subscription',
+ '2a69d5a7-5f3a-4718-bd84-ecc1f18f2b30', 10.99,  '2025-08-10', FALSE), -- Bills
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Gym Membership',    'Monthly fee',
+ '0e7c72aa-eeb7-4a91-a9a5-41b26ed9a78a', 39.99,  '2025-08-06', FALSE), -- Health
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'August Rent',       'Apartment rent',
+ '2a69d5a7-5f3a-4718-bd84-ecc1f18f2b30', 950.00, '2025-08-01', FALSE), -- Bills
+
+-- ── July 2025 ───────────────────────────────────────────────
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Metro Grocery',     'Weekly essentials',
+ '9db88be3-460c-4802-a0e6-57500444a1e4', 75.31,  '2025-07-28', FALSE), -- Grocery
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Road Trip Gas',     'Weekend drive',
+ 'c2deac5b-6de2-40fe-b89c-5066641e885e', 62.44,  '2025-07-26', FALSE), -- Travel
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Provincial Park Pass','Day pass + parking',
+ 'c2deac5b-6de2-40fe-b89c-5066641e885e', 18.00,  '2025-07-22', FALSE), -- Travel
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Shoppers Drug Mart','Vitamins & toiletries',
+ '0e7c72aa-eeb7-4a91-a9a5-41b26ed9a78a', 22.67,  '2025-07-19', FALSE), -- Health
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Hydro One Bill',    'Electricity – Jun cycle',
+ '2a69d5a7-5f3a-4718-bd84-ecc1f18f2b30', 115.90, '2025-07-15', FALSE), -- Bills
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Birthday Gift',     'Gift for friend',
+ '0cb658ce-ca8a-4a6d-a254-b4cf992081a7', 30.00,  '2025-07-12', FALSE), -- Entertainment
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'Uniqlo T-Shirt',    'Summer clothing',
+ '0cb658ce-ca8a-4a6d-a254-b4cf992081a7', 45.00,  '2025-07-05', FALSE), -- Entertainment
+
+('bf257b84-b398-4fbd-8d62-cbf9e3a9ba38', 'July Rent',         'Apartment rent',
+ '2a69d5a7-5f3a-4718-bd84-ecc1f18f2b30', 950.00, '2025-07-01', FALSE); -- Bills
+
+
+ Select * from users;
+
+
+Select * from categories;
+
+
+Select * from personal_expenses;
+
+Truncate table personal_expenses;
+
+TRUNCATE TABLE categories CASCADE;
+
+Select * from personal_expenses where user_id='bf257b84-b398-4fbd-8d62-cbf9e3a9ba38';
+
+Select * from users;
+
+Select * from categories;
+
+
+Select sum(p.amount) from personal_expenses p where p.user_id = 'bf257b84-b398-4fbd-8d62-cbf9e3a9ba38' and p.deleted = false and p.expense_date='2026-02-11';
+
+Select sum(p.amount) from personal_expenses p where p.user_id = 'bf257b84-b398-4fbd-8d62-cbf9e3a9ba38' and p.deleted = false and p.expense_date between '2025-08-01' and '2025-08-31';
+
+Select count(*) from personal_expenses p where p.user_id = 'bf257b84-b398-4fbd-8d62-cbf9e3a9ba38' and p.deleted = false and p.expense_date between '2025-08-01' and '2025-08-31';
+
+Select c.name, count(*) from personal_expenses p join categories c on p.category_id = c.category_id    where p.user_id = 'bf257b84-b398-4fbd-8d62-cbf9e3a9ba38' and p.deleted = false and p.expense_date between '2025-08-01' and '2025-08-31' group by c.name;
+
+
+
+SELECT c.name, COUNT(*) as transaction_count
+FROM personal_expenses p
+JOIN categories c ON p.category_id = c.category_id
+WHERE p.user_id = 'bf257b84-b398-4fbd-8d62-cbf9e3a9ba38'
+AND p.deleted = false
+AND p.expense_date BETWEEN '2025-08-01' AND '2025-08-31'
+GROUP BY c.name
+ORDER BY transaction_count DESC

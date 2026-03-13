@@ -17,14 +17,27 @@ export const addExpense=createAsyncThunk(
         "personalExpense/addExpense",
     async (args:AddExpensePayload,{dispatch,rejectWithValue}) => {
         try{
-            console.log("Adding expense with args:", args);
             const url = `${import.meta.env.VITE_PERSONAL_EXPENSE_URL}/`;
             const res = await axios.post(url,args,{
                 withCredentials: true
             });
-
-            console.log("Add expense response:", res.data);
             if(res?.data.status=="success"){
+                if(res.data.data.receiptId){
+                    const receiptUrl=res.data.data.receiptUrl;
+                    await axios.put(receiptUrl, args.file, {
+                        headers: {
+                            'Content-Type': args.fileType,
+                        },
+                        // onUploadProgress: (progressEvent) => {
+                        // if (progressEvent.total) {
+                        //     const percentage = Math.round(
+                        //                             (progressEvent.loaded / progressEvent.total) * 100
+                        //         );
+                        //     updateProgressBar(percentage);
+                        // }
+                    })
+
+                }
                 dispatch(getExpenses()); // Refresh the list after adding
                 return "Expense added successfully";
             }

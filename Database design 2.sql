@@ -5,7 +5,6 @@ Alter table personal_expenses drop category_category_id;
 select * from users;
 
 
-selec
 
 
 CREATE TABLE category_templates (

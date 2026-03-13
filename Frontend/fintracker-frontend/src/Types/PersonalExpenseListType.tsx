@@ -15,7 +15,12 @@ type ExpenseCore = {
 
 export type AddExpensePayload = ExpenseCore & {
   isReceipt: boolean;
-  receiptFile?: File;
+  fileName?: string;
+  fileType?: string;
+  fileLength?: number;
+  file?: File;
+  deleteReceipt?: boolean; // Flag to indicate if existing receipt should be deleted (used in edit mode) 
+//   receipt: File | string; // Base64 string for the receipt image
 };
 
 export type PersonalExpense = ExpenseCore & {
@@ -24,7 +29,7 @@ export type PersonalExpense = ExpenseCore & {
   categoryColor: string;
   receiptId: number | null;
   isReceipt: boolean;
-  receiptUrl: string | null;
+  receiptUrl: string | undefined;
 };
 
 

@@ -71,9 +71,7 @@ const personalExpenseSlice = createSlice({
         state.isLoading = false;
         state.isError = false;
         state.status = "succeeded";
-        console.log("Get expenses fulfilled with payload:", action.payload.data);
         state.data = action.payload;
-        // If your API includes a message/status field, adjust as needed:
         state.message ="Successfully fetched expenses";
       }
     );

@@ -30,6 +30,8 @@ const ExpenseList = () =>
   const [isEdit,setIsEdit]=useState(false);
   const [editExpenseData,setEditExpenseData]=useState<PersonalExpense | null>(null);
 
+  console.log("ExpenseList rendered with expenses:", expenseList);
+
   const changeModal= () =>{
     setModal(!modal);
   }
@@ -66,7 +68,6 @@ const ExpenseList = () =>
   const canNext = totalPages > 0 && page < totalPages - 1;
 
   const editExpense = (expense: PersonalExpense) => {
-    console.log("Editing expense:", expense);
     setIsEdit(true);
     setModal(true);
     setEditExpenseData(expense);
@@ -77,7 +78,6 @@ const ExpenseList = () =>
     let mounted = true;
     (async () => {
       if (!mounted) return;
-      console.log("Fetching expenses for page:", page, "size:", size);
       await dispatch(getExpenses());
     })();
     return () => {
@@ -177,7 +177,7 @@ const ExpenseList = () =>
                     <td className="px-6 py-3 text-base tracking-wide text-white">{formatCurrency(expense.amount)}</td>
                     <td className="px-6 py-3 text-base tracking-wide text-white">
                       {expense.receiptId ? (
-                        <span className="text-green-500">Yes</span>
+                        <span className="text-green-500"><a href={expense?.receiptUrl}>view</a></span>
                       ) : ( <span className="text-red-500">No</span>)}
                     </td>
                     
@@ -242,8 +242,6 @@ const ExpenseList = () =>
                     onClick={() => {
                       let prevpage = Math.max(0, page - 1);
                       dispatch(setPage(prevpage));
-                    //
-                      // setPage((p) => Math.max(0, p - 1))
                     }}
                     disabled={!canPrev}
                   >
@@ -255,9 +253,8 @@ const ExpenseList = () =>
                       {
                         let nextpage = page!=totalPages ?Math.min(page+1,totalPages-1) : page;
                         dispatch(setPage(nextpage));
-                        // setPage((p) => (page!=totalPages ?Math.min(p+1,totalPages) : p))
                       }
-                      }
+                    }
                     disabled={!canNext}
                   >
                     Next
@@ -265,9 +262,8 @@ const ExpenseList = () =>
                   <button
                     className="px-3 py-1 rounded border border-gray-600 text-gray-200 disabled:opacity-50"
                     onClick={() => {
-                      let lastpage = Math.max(0, totalPages - 1);
-                      dispatch(setPage(lastpage));
-                      // setPage(Math.max(0, totalPages - 1))
+                        let lastpage = Math.max(0, totalPages - 1);
+                        dispatch(setPage(lastpage));
                       }
                     }
 

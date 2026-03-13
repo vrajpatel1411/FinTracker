@@ -1,17 +1,18 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-export const getCategories=createAsyncThunk(
-        "categories/getCategories",
+export const getAnalytics=createAsyncThunk(
+        "analytics/getAnalytics",
         async (_, { rejectWithValue }) => {
             try{
-                const url = `${import.meta.env.VITE_PERSONAL_EXPENSE_URL}/category/`;
+                let date = new Date().toISOString().split('T')[0];
+                const url = `${import.meta.env.VITE_PERSONAL_EXPENSE_URL}/analytics?date=${date}`;
                 const res = await axios.get(url,{
                     withCredentials: true
                 });
 
-                if(res.data.status === "success"){
-                    return res.data.data;
+                if(res.status === 200){
+                    return res.data;
                 }
                 throw new Error(res.data.error || "Failed to fetch categories");
             }
@@ -20,9 +21,9 @@ export const getCategories=createAsyncThunk(
                     const code = err.response?.status;
                     const data = err.response?.data as Partial<{ error: string; status: string }> | undefined;
                     return rejectWithValue({
-                        message: data?.error ?? err.message ?? "Request failed",
-                        status: data?.status,
-                        code,
+                    message: data?.error ?? err.message ?? "Request failed",
+                    status: data?.status,
+                    code,
                     });
                 }
                 return rejectWithValue({

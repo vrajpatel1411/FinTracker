@@ -1,0 +1,88 @@
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: fintracker-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=7d'
+    networks:
+      - fintracker-net
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: fintracker-jaeger
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4317:4317"     # OTLP gRPC (your services send traces here)
+      - "4318:4318"     # OTLP HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - fintracker-net
+  
+  grafana:
+    image: grafana/grafana:latest
+    container_name: fintracker-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER:     admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP:     false
+      GF_PATHS_PROVISIONING:      /etc/grafana/provisioning
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - fintracker-net
+
+  redis:
+    image: "redis/redis-stack-server:latest"
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - fintracker-net
+
+  userauthservice:
+    build:
+      context: C:\Users\vrajp\Desktop\Personal\projects\FinTracker\FinTracker-auth\Backend\UserAuthService
+    container_name: userauthservice
+    environment:
+      - REDIS_HOST_URL=redis
+      - REDIS_PORT=6379
+      - POSTGRES_DATABASE_URL=jdbc:postgresql://host.docker.internal:5432/fintracker
+    ports:
+      - "8084:8084"
+    depends_on:
+      - redis
+    networks:
+      - fintracker-net
+
+  apigateway:
+    build:
+      context: C:\Users\vrajp\Desktop\Personal\projects\FinTracker\FinTracker-gateway\Backend\FintrackerGateway
+    container_name: apigateway
+    environment:
+      - PERSONAL_SERVICE_URL=http://host.docker.internal:8083
+      - USER_AUTH_SERVICE=http://userauthservice:8084
+      - DOMAIN=localhost
+      - VALIDATION_URL=http://userauthservice:8084/userauth/api/auth
+    ports:
+      - "8081:8081"
+    depends_on:
+      - userauthservice
+    networks:
+      - fintracker-net
+
+networks:
+  fintracker-net:
+    driver: bridge

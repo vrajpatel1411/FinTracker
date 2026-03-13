@@ -19,15 +19,20 @@ AddExpensePayload,
     async (args,{dispatch,rejectWithValue}) => {
         try{
             // console.log("Adding expense with args:", args);
-            const url = `${import.meta.env.VITE_PERSONAL_EXPENSE_URL}/expense/${args.expenseId}`;
-            const res = await axios.patch(url,args,{
-                withCredentials: true
-            });
 
-            console.log("Updated expense", res.data);
-            if(res?.data.status=="success" && !res?.data.error){
-                dispatch(getExpenses()).unwrap; // Refresh the list after adding
-                return "Expense Updated successfully";
+            console.log("EditExpense Payload:", args);
+
+            
+            const url = `${import.meta.env.VITE_PERSONAL_EXPENSE_URL}/expense/${args.expenseId}`;
+            const res = await axios.patch(url, args, { withCredentials: true });
+            if (res?.data.status === "success") {
+                if (res.data.data?.receiptId && res.data.data?.receiptUrl) {
+                await axios.put(res.data.data.receiptUrl, args.file, {
+                    headers: { "Content-Type": args.fileType },
+                });
+                }
+                dispatch(getExpenses());
+                return "Expense updated successfully";
             }
             else{
                 return rejectWithValue({

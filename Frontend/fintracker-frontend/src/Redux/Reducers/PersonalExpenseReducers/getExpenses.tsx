@@ -20,11 +20,9 @@ const getExpenses = createAsyncThunk<
     async (_,{rejectWithValue,getState}) => {
          try{
             let state=getState() as any;
-            console.log("Current query params in state:", state.personalExpenseReducer
-            ?.queryParams);
             let page = state.personalExpenseReducer.queryParams?.page || 0;
             let size = state.personalExpenseReducer.queryParams?.size || 10;
-            console.log("Fetching expenses with page:", page, "and size:", size);
+            
             page = Math.max(0, page);
             size = Math.min(Math.max(1, size), 100); // mirror server validation
 
@@ -35,6 +33,7 @@ const getExpenses = createAsyncThunk<
             });
 
             if(res?.data.status === "success"){
+                // console.log("Fetched expenses successfully:", res.data);
                 return res.data
             }
             return rejectWithValue({
