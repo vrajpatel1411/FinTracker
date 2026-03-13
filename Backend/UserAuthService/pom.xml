@@ -29,6 +29,7 @@
     <properties>
         <java.version>17</java.version>
         <spring-cloud.version>2024.0.0</spring-cloud.version>
+        <spring.opentelemetry.version>2.25.0</spring.opentelemetry.version>
     </properties>
     <dependencies>
         <dependency>
@@ -42,6 +43,11 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-spring-boot-starter</artifactId>
+            <version>${spring.opentelemetry.version}</version>
+        </dependency>
 
 
         <dependency>
@@ -131,6 +137,13 @@
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
                 <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.opentelemetry.instrumentation</groupId>
+                <artifactId>opentelemetry-instrumentation-bom</artifactId>
+                <version>${spring.opentelemetry.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

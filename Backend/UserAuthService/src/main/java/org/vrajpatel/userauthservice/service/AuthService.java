@@ -5,7 +5,6 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -34,15 +33,10 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class AuthService {
-
     private final Logger logger = LoggerFactory.getLogger(AuthService.class);
-
     private final UserRepository userRepository;
-
     private final RefreshToken refreshToken;
-
     private final StringRedisTemplate stringRedisTemplate;
-
     private final TokenProvider tokenProvider;
 
     private final PasswordEncoder passwordEncoder;
@@ -65,48 +59,39 @@ public class AuthService {
     }
 
 
-
     @Transactional
     public LoginResponseDTO loginService(@Valid UserDTO userDTO) throws UserNotFound, UnAuthorizedException {
-
-        Optional<User> user=userRepository.findByEmail(userDTO.getEmail().toLowerCase());
-        if(user.isPresent()){
-            if(user.get().isEmailVerified()){
-                if (passwordEncoder.matches(userDTO.getPassword(), user.get().getPassword())) {
-
-                String accessToken = tokenProvider.generateToken('A', user.get().getUserId().toString());
-                String refreshTokenKey = tokenProvider.generateToken('R', user.get().getUserId().toString());
-                refreshToken.setRefreshToken(refreshTokenKey, user.get().getEmail());
-                LoginResponseDTO loginResponseDTO=new LoginResponseDTO();
-                loginResponseDTO.setAccessToken(accessToken);
-                loginResponseDTO.setRefreshToken(refreshTokenKey);
-                loginResponseDTO.setEmailVerified(true);
-                return loginResponseDTO;
-            } else {
-                throw new UnAuthorizedException("Unauthorized Access, Password is wrong");
-            }
+        User user=userRepository.findByEmail(userDTO.getEmail().toLowerCase()).orElseThrow(()-> new UserNotFound("User Not Yet Registered"));
+        if (passwordEncoder.matches(userDTO.getPassword(), user.getPassword())) {
+            if(user.isEmailVerified()){
+                return getLogin(user);
             }else{
                 sendOTP(userDTO.getEmail().toLowerCase());
-//                String otp= otpService.generateOTP();
-//                emailService.sendEmail(userDTO.getEmail(),"OTP Verification","Your OTP is: "+otp);
-//                stringRedisTemplate.opsForValue().set("otp:"+userDTO.getEmail().toLowerCase(),otp,120, TimeUnit.SECONDS);
                 LoginResponseDTO loginResponseDTO=new LoginResponseDTO();
                 loginResponseDTO.setEmail(userDTO.getEmail().toLowerCase());
                 loginResponseDTO.setEmailVerified(false);
                 return loginResponseDTO;
             }
-        }else {
-            throw new UserNotFound("User Not Yet Registered");
+        } else {
+            throw new UnAuthorizedException("Unauthorized Access, Password is wrong");
         }
+    }
 
-
+    private LoginResponseDTO getLogin(User user) {
+        logger.info("Logging to user");
+        String accessToken = tokenProvider.generateToken('A', user.getUserId().toString());
+        String refreshTokenKey = tokenProvider.generateToken('R', user.getUserId().toString());
+        refreshToken.setRefreshToken(refreshTokenKey, user.getEmail());
+        LoginResponseDTO loginResponseDTO=new LoginResponseDTO();
+        loginResponseDTO.setAccessToken(accessToken);
+        loginResponseDTO.setRefreshToken(refreshTokenKey);
+        loginResponseDTO.setEmailVerified(true);
+        return loginResponseDTO;
     }
 
     @Transactional
-    public LoginResponseDTO registerService(RegisterUserDto userDTO) throws UserExistException {
-
+    public LoginResponseDTO registerService(RegisterUserDto userDTO) throws UserExistException, Exception {
         boolean isUser = userRepository.existsByEmail(userDTO.getEmail().toLowerCase());
-
         if (isUser) {
             throw new UserExistException("Email Is Already Registered");
         } else {
@@ -114,18 +99,18 @@ public class AuthService {
             user.setEmail(userDTO.getEmail().toLowerCase());
             user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
             user.setFirstName(userDTO.getFirstName());
-
             user.setCreatedAt(new Date());
             user.setAuthProvider(AuthProvider.usernamepassword);
             user=userRepository.save(user);
-
-            sendOTP(userDTO.getEmail().toLowerCase());
+            boolean otpStatus=sendOTP(userDTO.getEmail().toLowerCase());
+            if(!otpStatus){
+                logger.warn("Issue Sending OTP");
+                throw new Exception("Issue sending OTP");
+            }
             LoginResponseDTO loginResponseDTO=new LoginResponseDTO();
-            loginResponseDTO.setEmail(userDTO.getEmail().toLowerCase());
+            loginResponseDTO.setEmail(user.getEmail().toLowerCase());
             loginResponseDTO.setEmailVerified(false);
-
             return loginResponseDTO;
-
         }
     }
 
@@ -135,7 +120,6 @@ public class AuthService {
                 if (email != null) {
                     Optional<User> user = userRepository.findByEmail(email.toLowerCase());
                     if (user.isPresent()) {
-
                         return tokenProvider.generateToken('A', user.get().getUserId().toString());
                     } else {
                         throw new UserNotFound("User Not Found");
@@ -147,8 +131,6 @@ public class AuthService {
                 throw new UnAuthorizedException("Not Authorized. Refresh Token Empty or not Valid");
             }
     }
-
-//    }
 
     public Boolean validate(String accessToken) throws UnAuthorizedException, ExpiredJwtException {
         if (StringUtils.hasText(accessToken)) {
@@ -177,39 +159,20 @@ public class AuthService {
         return true;
     }
 
-    public LoginResponseDTO verifyOTP(OtpDto otp) throws OTPException{
+    public LoginResponseDTO verifyOTP(OtpDto otp) throws OTPException,UserNotFound{
             String savedOtp=stringRedisTemplate.opsForValue().get("OTP:"+otp.getUserEmail().toLowerCase());
-            logger.warn(savedOtp);
-            String userotp=otp.getOtp();
-            logger.warn(userotp);
-            logger.warn(String.valueOf(userotp.equals(savedOtp)));
-            if(userotp.equals(savedOtp)){
-                Optional<User> user = userRepository.findByEmail(otp.getUserEmail().toLowerCase());
-                if (user.isPresent()) {
-                    logger.warn("OTP verified");
-
-                    String accessToken = tokenProvider.generateToken('A', user.get().getUserId().toString());
-                    String refreshTokenKey = tokenProvider.generateToken('R', user.get().getUserId().toString());
-                    refreshToken.setRefreshToken(refreshTokenKey, user.get().getEmail());
-                    LoginResponseDTO loginResponseDTO=new LoginResponseDTO();
-                    loginResponseDTO.setAccessToken(accessToken);
-                    loginResponseDTO.setRefreshToken(refreshTokenKey);
-                    loginResponseDTO.setEmailVerified(true);
-
-                    user.get().setEmailVerified(true);
-                    userRepository.save(user.get());
-
-                    return loginResponseDTO;
-                } else {
-                    LoginResponseDTO loginResponseDTO=new LoginResponseDTO();
-                    loginResponseDTO.setEmailVerified(false);
-                    return loginResponseDTO;
-                }
+            String userOTP=otp.getOtp();
+            if(userOTP.equals(savedOtp)){
+                User user = userRepository.findByEmail(otp.getUserEmail().toLowerCase()).orElseThrow(()->new UserNotFound("User not found with email "));
+                user.setEmailVerified(true);
+                userRepository.save(user);
+                return getLogin(user);
             }
             else{
-                throw new OTPException("OTP Didn't Match. Try again");
+                LoginResponseDTO loginResponseDTO=new LoginResponseDTO();
+                loginResponseDTO.setEmailVerified(false);
+                return loginResponseDTO;
             }
-
     }
 }
 
