@@ -4,16 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.UUID;
 
-@Data
 @Entity
 @Table(name="personal_expenses")
+@Data
 public class PersonalExpenseModel {
 
     @Id
@@ -24,8 +22,13 @@ public class PersonalExpenseModel {
     @Column(name="title")
     private String title;
 
-    @Column(name="user_id")
+    @Column(name="user_id", insertable=false, updatable=false)
     private UUID userId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @JsonIgnore
+    private User user;
 
     @Column(name="description")
     private String description;
@@ -34,16 +37,19 @@ public class PersonalExpenseModel {
     private BigDecimal amount;
 
     @Column(name="expense_date")
-    private Date expenseDate;
+    private LocalDate expenseDate;
 
     @Column(name="created_at")
-    private Date createdAt;
+    private LocalDate createdAt=LocalDate.now();
 
     @Column(name="updated_at")
-    private Date updatedAt;
+    private LocalDate updatedAt=LocalDate.now();
+
 
     @Column(name="deleted")
-    private Boolean deleted;
+    private Boolean deleted=false;
+
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="category_id")
@@ -53,6 +59,22 @@ public class PersonalExpenseModel {
     @OneToOne(fetch=FetchType.LAZY)
     @JoinColumn(name="receipt_id")
     @JsonIgnore
-    private receiptModel receipt;
+    private ReceiptModel receipt;
 
+    @Override
+    public String toString() {
+        return "PersonalExpenseModel{" +
+                "amount=" + amount +
+                ", expenseId=" + expenseId +
+                ", title='" + title + '\'' +
+                ", userId=" + userId +
+                ", description='" + description + '\'' +
+                ", expenseDate=" + expenseDate +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
+                ", deleted=" + deleted +
+                ", category=" + category +
+                ", receipt=" + receipt +
+                '}';
+    }
 }

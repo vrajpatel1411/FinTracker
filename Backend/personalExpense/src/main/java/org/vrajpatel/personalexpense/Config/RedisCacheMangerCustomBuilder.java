@@ -1,6 +1,6 @@
 package org.vrajpatel.personalexpense.Config;
 
-import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer;
+import org.springframework.boot.cache.autoconfigure.RedisCacheManagerBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -14,7 +14,8 @@ public class RedisCacheMangerCustomBuilder {
     public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
         return (builder)->{
             builder
-                    .withCacheConfiguration("personalExpenses", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(1)));
+                    .withCacheConfiguration("personalExpenses", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(30)))
+                    .withCacheConfiguration("analytics", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(30)));
 
         };
     }
