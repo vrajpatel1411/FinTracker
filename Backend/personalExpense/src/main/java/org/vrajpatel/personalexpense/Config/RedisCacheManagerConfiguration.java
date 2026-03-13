@@ -5,23 +5,17 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
+
+import java.time.Duration;
 
 @Configuration
 public class RedisCacheManagerConfiguration {
 
     @Bean
-    public RedisTemplate<String,Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        RedisTemplate<String,Object> redisTemplate = new RedisTemplate<>();
-        redisTemplate.setConnectionFactory(redisConnectionFactory);
-        redisTemplate.setDefaultSerializer(GenericJacksonJsonRedisSerializer.builder().build());
-        return redisTemplate;
-    }
-
-    @Bean
     public RedisCacheConfiguration redisCacheConfiguration() {
-        return RedisCacheConfiguration.defaultCacheConfig(Thread.currentThread().getContextClassLoader());
+        return RedisCacheConfiguration.defaultCacheConfig(Thread.currentThread().getContextClassLoader())
+
+                .disableCachingNullValues();
     }
 
     @Bean
@@ -29,6 +23,10 @@ public class RedisCacheManagerConfiguration {
                                           RedisCacheConfiguration redisCacheConfiguration) {
         return RedisCacheManager.builder(factory)
                 .cacheDefaults(redisCacheConfiguration)
+                .withCacheConfiguration("personalExpenses",
+                        redisCacheConfiguration.entryTtl(Duration.ofMinutes(30)))
+                .withCacheConfiguration("analytics",
+                        redisCacheConfiguration.entryTtl(Duration.ofMinutes(30)))
                 .build();
     }
 }
