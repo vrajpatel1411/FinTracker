@@ -17,12 +17,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.vrajpatel.userauthservice.Exception.BadRequestException;
 import org.vrajpatel.userauthservice.service.AuthService;
-import org.vrajpatel.userauthservice.utils.CookiesUtil;
-import org.vrajpatel.userauthservice.utils.HttpCookieOauth2;
+import org.vrajpatel.userauthservice.utils.*;
 import org.vrajpatel.userauthservice.utils.JwtUtils.TokenProvider;
 import org.vrajpatel.userauthservice.utils.OTPService.EmailService;
 import org.vrajpatel.userauthservice.utils.OTPService.OTP;
-import org.vrajpatel.userauthservice.utils.UserPrincipal;
 import org.vrajpatel.userauthservice.utils.config.AppProperties;
 
 import java.io.IOException;
@@ -40,6 +38,9 @@ public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     @Autowired
     private AppProperties appProperties;
+
+    @Autowired
+    private RefreshToken refreshTokenUtil;
 
 
     @Autowired
@@ -78,24 +79,10 @@ public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             }
 
             if(accessToken!=null && refreshToken!=null){
-                ResponseCookie cookie=ResponseCookie.from("accessToken",accessToken) .httpOnly(true)
-                    .maxAge(3600)
-                    .sameSite("None")
-                    .domain(domain)
-                    .secure(true)
-                    .path("/")
-                    .build();
-
-                ResponseCookie cookie2=ResponseCookie.from("refreshToken",refreshToken) .httpOnly(true)
-                    .maxAge(3600)
-                    .sameSite("None")
-                    .domain(domain)
-                    .secure(true)
-                    .path("/")
-                    .build();
-                response.addHeader(HttpHeaders.SET_COOKIE,cookie.toString());
-                response.addHeader(HttpHeaders.SET_COOKIE,cookie2.toString());
+                response.addHeader(HttpHeaders.SET_COOKIE,SetCookies.getAccessCookie(accessToken));
+                response.addHeader(HttpHeaders.SET_COOKIE,SetCookies.getRefreshToken(refreshToken));
             }
+            refreshTokenUtil.setRefreshToken(refreshToken, userPrincipal.getEmail());
             UriComponentsBuilder builder = UriComponentsBuilder
                     .fromUriString(targetUrl)
                     .queryParam("status", true);
@@ -103,7 +90,11 @@ public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         }
         else {
             String otp= otpService.generateOTP();
-            emailService.sendEmail(userPrincipal.getEmail(),"OTP Verification","Your OTP is: "+otp);
+            try {
+                emailService.sendEmail(userPrincipal.getEmail(), "OTP Verification", "Your OTP is: " + otp);
+            } catch (Exception e) {
+                throw new BadRequestException(e.getMessage());
+            }
             stringRedisTemplate.opsForValue().set("OTP:"+userPrincipal.getEmail().toLowerCase(), otp, 120, TimeUnit.SECONDS);
             UriComponentsBuilder builder = UriComponentsBuilder
                     .fromUriString(targetUrl)

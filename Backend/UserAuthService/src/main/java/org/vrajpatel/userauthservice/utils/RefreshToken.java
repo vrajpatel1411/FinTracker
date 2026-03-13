@@ -1,5 +1,7 @@
 package org.vrajpatel.userauthservice.utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -11,6 +13,8 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class RefreshToken {
 
+    private final Logger logger= LoggerFactory.getLogger(RefreshToken.class);
+
     private final StringRedisTemplate stringRedisTemplate;
 
     public RefreshToken(StringRedisTemplate stringRedisTemplate) {
@@ -18,12 +22,10 @@ public class RefreshToken {
     }
 
     public void setRefreshToken(String refreshToken, String userEmail) {
-
+        logger.info("Saving refresh token for " + userEmail);
         stringRedisTemplate.opsForValue().set("refresh_token : "+refreshToken, userEmail, 864000, TimeUnit.SECONDS);
-
         stringRedisTemplate.opsForSet().add("user_email : "+userEmail, refreshToken);
-
         stringRedisTemplate.expire("refresh_token : "+refreshToken, 864000, TimeUnit.SECONDS);
-
+        logger.info("Refresh token saved");
     }
 }

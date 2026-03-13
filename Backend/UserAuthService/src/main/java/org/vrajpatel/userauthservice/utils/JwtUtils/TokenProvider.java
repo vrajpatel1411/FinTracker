@@ -5,10 +5,9 @@ import io.jsonwebtoken.security.SignatureException;
 import io.jsonwebtoken.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.vrajpatel.userauthservice.Exception.BadRequestException;
-import org.vrajpatel.userauthservice.model.User;
+
 import org.vrajpatel.userauthservice.utils.UserPrincipal;
 import org.vrajpatel.userauthservice.utils.config.AppProperties;
 
@@ -29,14 +28,14 @@ public class TokenProvider {
         this.appProperties = appProperties;
 
         // Convert the secret key string to a proper Key object using UTF-8 encoding
-        this.accesskey = Keys.hmacShaKeyFor(appProperties.getAuth().getTokenSecret().getBytes(StandardCharsets.UTF_8));
+        this.accesskey = Keys.hmacShaKeyFor(appProperties.getAuth().getAccessTokenSecret().getBytes(StandardCharsets.UTF_8));
         this.refreshKey=Keys.hmacShaKeyFor(appProperties.getAuth().getRefreshTokenSecret().getBytes(StandardCharsets.UTF_8));
     }
 
     public String generateToken(char tokenType,String userId) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + ((tokenType == 'A')?appProperties.getAuth().getTokenExpirationMsec():appProperties.getAuth().getRefreshTokenExpirationMsec()));
-
+        Date expiryDate = new Date(now.getTime() + ((tokenType == 'A')?appProperties.getAuth().getAccessTokenExpirationMsec():appProperties.getAuth().getRefreshTokenExpirationMsec()));
+//        logger.warn("Expiry date: {}", expiryDate);
         return Jwts.builder()
                 .setSubject(userId)
                 .claim("id", userId)
@@ -61,8 +60,7 @@ public class TokenProvider {
                 .build()
                 .parseClaimsJws(jwt)
                 .getBody();
-        logger.info(claims.toString());
-        logger.info(claims.getSubject());
+
         return UUID.fromString(claims.getSubject());
     }
 

@@ -44,10 +44,10 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
     private boolean isPublicEndpoint(String requestURI) {
 
-        return requestURI.startsWith("/userauth/api/auth/") ||
-                requestURI.startsWith("/oauth2/") ||
-                requestURI.startsWith("/swagger-ui/") ||
-                requestURI.startsWith("/v3/") || requestURI.startsWith("/actuator/");
+        return requestURI.startsWith("/userauth/api/auth") ||
+                requestURI.startsWith("/oauth2") ||
+                requestURI.startsWith("/user/api/") ||
+                requestURI.startsWith("/v3") || requestURI.startsWith("/actuator");
     }
 
     @SuppressWarnings("NullableProblems")

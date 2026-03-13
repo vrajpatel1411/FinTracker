@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 
+import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
@@ -93,7 +94,6 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody UserDTO userDTO) {
         AuthResponse authResponse=new AuthResponse();
-
         try{
             LoginResponseDTO response=authService.loginService(userDTO);
             if(response.isEmailVerified()){
@@ -110,19 +110,21 @@ public class AuthController {
             }
         }
         catch (UserNotFound ex){
+            logger.warn("User Not Found ");
             authResponse.setStatus(false);
             authResponse.setMessage("User not found");
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(authResponse);
         }catch (UnAuthorizedException ex){
+            logger.warn("UnAuthorized ");
             authResponse.setStatus(false);
             authResponse.setMessage("Unauthorized, Wrong Password");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(authResponse);
         }catch (Exception e){
+            logger.warn("Internal Server Error");
             authResponse.setStatus(false);
             authResponse.setMessage("Internal Server Error");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(authResponse);
         }
-
     }
 
     @Operation(summary = "Registering a new User" , description="Register New User based on information provided and sent back jwt token if successfull")
@@ -154,6 +156,7 @@ public class AuthController {
             }
         }
         catch (UserExistException ex){
+            logger.warn("User Already Exist");
             authResponse.setStatus(false);
             authResponse.setMessage("User Already Exist");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(authResponse);
@@ -183,7 +186,7 @@ public class AuthController {
                     content = @Content(schema = @Schema(implementation = ValidationResponseDto.class)))
     })
     @GetMapping("/validate")
-    public ResponseEntity<ValidationResponseDto> validateUser(@CookieValue("accessToken") @Nullable  String accessToken, @CookieValue("refreshToken") String refreshToken) throws ExpiredJwtException {
+    public ResponseEntity<ValidationResponseDto> validateUser(@CookieValue("accessToken") @Nullable  String accessToken, @CookieValue("refreshToken")  String refreshToken) throws ExpiredJwtException {
         // Update according to the RefreshToken and AccessToken
         ValidationResponseDto validationResponseDto=new ValidationResponseDto();
         try {
@@ -248,7 +251,6 @@ public class AuthController {
         ValidationResponseDto validationResponseDto=new ValidationResponseDto();
         try {
             Boolean isValid=authService.validate(jwtDto.getJwt());
-            logger.info("TOken valid or not " + isValid);
             if (isValid) {
 
                 UUID id = tokenProvider.getUserIdFromJWT(jwtDto.getJwt());
@@ -260,11 +262,13 @@ public class AuthController {
 
                 return ResponseEntity.ok().body(validationResponseDto);
             } else {
+                logger.warn("Error Validating JWT Token");
                 validationResponseDto.setValid(false);
                 validationResponseDto.setMessage("Invalid access token");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponseDto);
             }
         }catch (Exception e){
+            logger.warn("JWT Token"+ e.getMessage());
             validationResponseDto.setValid(false);
             validationResponseDto.setMessage(e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponseDto);
@@ -296,7 +300,6 @@ public class AuthController {
             User user=userService.findUserById(id);
             accessTokenResponse.setUserEmail(user.getEmail());
             accessTokenResponse.setUserId(user.getUserId().toString());
-            accessTokenResponse.setAccessToken(user.getEmail());
             accessTokenResponse.setAccessToken(newAccessToken);
             return ResponseEntity.ok().body(accessTokenResponse);
 
