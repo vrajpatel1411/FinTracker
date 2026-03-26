@@ -1,14 +1,12 @@
-// PersonalExpenseDashboard.tsx
-import { lazy, Suspense, useEffect } from 'react';
-import DashBoardCards from './DashBoardCards';
-import ExpenseCharts from './ExpenseCharts';
+import { lazy, Suspense} from 'react';
+
 import { ExpenseRowsSkeleton } from './DashboardCardSkeleton';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../Redux/Store';
-import { useAppDispatch } from '../../Redux/hooks';
-import { getAnalytics } from '../../Redux/Reducers/AnalyticsReducers/getAnalytics';
+import { categoriesType, dailyExpensesType } from '../../Types/AnalyticsType';
+import { useGetAnalyticsQuery } from '../../Redux/api/expenseApi';
 
 const ExpenseList = lazy(() => import('./ExpenseList'));
+const DashBoardCards = lazy(() => import('./DashBoardCards'));
+const ExpenseCharts = lazy(() => import('./ExpenseCharts'));
 
 function ExpenseListFallback() {
   return (
@@ -43,30 +41,23 @@ function ExpenseListFallback() {
 }
 
 const PersonalExpenseDashboard = () => {
+  const today = new Date().toISOString().split('T')[0];
+  const {data:analyticsData, isLoading} = useGetAnalyticsQuery(today);
+  
+  const todaySpending = analyticsData?.expenseSummary.todayExpense ?? 0;
+  const monthlySpending = analyticsData?.expenseSummary.monthlyExpense ?? 0;
+  const transactionCount = analyticsData?.expenseSummary.totalTransactions ?? 0;
 
-  const analyticsState = useSelector((state: RootState) => state.analyticsReducer);
-  const dispatch = useAppDispatch();
+  const dailyExpenses: dailyExpensesType[] | null = analyticsData
+      ? Object.entries(analyticsData.dailyExpenseDTO?.dailyExpense ?? {})
+          .map(([date, amount]) => ({ date, amount }))
+      : null;
 
-  const isLoading = analyticsState.isLoading;
-  const todaySpending =analyticsState.analyticsData?.todayExpense || 0;
-  const monthlySpending = analyticsState.analyticsData?.monthlyExpense || 0;
-  const transactionCount =analyticsState.analyticsData?.totalTransactions || 0;
-  const category = analyticsState.analyticsData?.category || null;
-  const dailyExpenses = analyticsState.analyticsData
-    ? Object.entries(analyticsState.analyticsData.dailyExpenseDTO?.dailyExpense ?? {}).map(
-        ([date, amount]) => ({ date, amount: amount})
-      )
-    : null;
+  const categoriesArray: categoriesType[] = Object.entries(
+      analyticsData?.categoriesDTO?.categories ?? {}
+  ).map(([name, value]) => ({ name, value }));
 
-const categories = analyticsState.analyticsData
-    ? Object.entries(analyticsState.analyticsData.categoriesDTO?.categories ?? {}).map(
-        ([name, value]) => ({ name, value: value  })
-      )
-    : null;
-
-  useEffect(() => {
-    dispatch(getAnalytics());
-  },[]);
+  const category: categoriesType | null = categoriesArray[0] ?? null;
 
   return (
     <div className="flex flex-col gap-5 py-6">
@@ -80,8 +71,11 @@ const categories = analyticsState.analyticsData
       <DashBoardCards isLoading={isLoading} category={category} totalSpending={todaySpending} monthlySpending={monthlySpending} transactionsCount={transactionCount}  />
 
       {/* Charts */}
-      <ExpenseCharts isLoading={isLoading} categories={categories} dailyExpenses={dailyExpenses}/>
-
+      <ExpenseCharts
+  isLoading={isLoading}
+  categories={categoriesArray}   // ✅ pass categoriesType[], not raw object
+  dailyExpenses={dailyExpenses}
+/>
       {/* Expense Table */}
       <Suspense fallback={<ExpenseListFallback />}>
         <ExpenseList />

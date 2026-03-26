@@ -1,65 +1,58 @@
 
 import AddIcon from '@mui/icons-material/Add';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect,useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../../Redux/hooks';
-import getExpenses from '../../Redux/Reducers/PersonalExpenseReducers/getExpenses';
 import { PersonalExpense } from '../../Types/PersonalExpenseListType';
 import AddExpense from './AddExpense';
 import { ListItemIcon, ListItemText, MenuItem, MenuList, Paper } from '@mui/material';
 import { setPage, setSize } from '../../Redux/slice/PersonalExpenseSlice';
-import { deleteExpense } from '../../Redux/Reducers/PersonalExpenseReducers/deleteExpense';
+import { useDeleteExpenseMutation, useGetCategoriesQuery, useGetExpensesQuery } from '../../Redux/api/expenseApi';
 
 const ExpenseList = () =>
 {
   const page = useAppSelector((state)=>state.personalExpenseReducer.queryParams.page) ?? 0;
-  const size = useAppSelector((state)=>state.personalExpenseReducer.queryParams.size) ?? 10;
-  const totalPages = useAppSelector((state)=>state.personalExpenseReducer.data?.data.page.totalPages) ?? 0;
-  const totalElements= useAppSelector((state)=>state.personalExpenseReducer.data?.data.page.totalElements) ?? 0;
-  const expenseList=useAppSelector((state)=>state.personalExpenseReducer.data?.data.content) ?? [];
-  const isLoading=useAppSelector((state)=>state.personalExpenseReducer.isLoading);
-  const isError = useAppSelector((state) => state.personalExpenseReducer.isError);
-  const error = useAppSelector((state) => state.personalExpenseReducer.message);  
+  const size = useAppSelector((state)=>state.personalExpenseReducer.queryParams.size) ?? 10; 
   const dispatch = useAppDispatch();
-  const categories = useAppSelector((state) => state.categoryReducer.categories);
+  const { data: expensesData, isLoading, isError, error } = useGetExpensesQuery({ page, size });
+  const errorMessage = isError
+    ? 'status' in (error ?? {})
+        ? (error as { data?: { error?: string } })?.data?.error ?? "Failed to fetch expenses"
+        : "Failed to fetch expenses"
+    : "";
+  const { data: categories = [] } = useGetCategoriesQuery();
+  const totalPages = expensesData?.page.totalPages ?? 0;
+  const totalElements = expensesData?.page.totalElements ?? 0;
+  const expenseList = expensesData?.content ?? [];
+  const [deleteExpenseMutation] = useDeleteExpenseMutation();
+  
   const [modal,setModal]=useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const iconRef = useRef<SVGSVGElement | null>(null);
-
-  const [selectedExpenseId, setSelectedExpenseId] = useState<String | null>(null);
+  const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null);
   const [isEdit,setIsEdit]=useState(false);
   const [editExpenseData,setEditExpenseData]=useState<PersonalExpense | null>(null);
-
-  console.log("ExpenseList rendered with expenses:", expenseList);
-
   const changeModal= () =>{
     setModal(!modal);
   }
-
   const resetEdit=()=>{
     setIsEdit(false);
     setEditExpenseData(null);
   }
-
-  const toggleMenu = (expenseId: String | undefined) => {
+  const toggleMenu = (expenseId: string | undefined) => {
     if (!expenseId) return;
     setSelectedExpenseId(prev => (prev === expenseId ? null : expenseId));
   };
-
   useEffect(() => {
   if (!selectedExpenseId) return;
-
   const handler = (e: MouseEvent) => {
     const target = e.target as Node;
-
     const clickedInsideMenu = menuRef.current?.contains(target);
     const clickedOnIcon = iconRef.current?.contains(target);
-
     if (!clickedInsideMenu && !clickedOnIcon) {
       setSelectedExpenseId(null);
     }
   };
-
   document.addEventListener("mousedown", handler);
   return () => document.removeEventListener("mousedown", handler);
 }, [selectedExpenseId]);
@@ -72,21 +65,8 @@ const ExpenseList = () =>
     setModal(true);
     setEditExpenseData(expense);
   }
-
- 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      if (!mounted) return;
-      await dispatch(getExpenses());
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [page, size]);
-
-  const rows = useMemo(()=>expenseList, [expenseList]);
-
+  
+  
   const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(amount);
   const formatDate = (iso: string) => {
@@ -94,7 +74,6 @@ const ExpenseList = () =>
     if (Number.isNaN(d.getTime())) return '—';
     return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
   };
-
   return (
     <div>
       <div className='flex-1 w-[25%]'>
@@ -156,15 +135,15 @@ const ExpenseList = () =>
                   )}
                   {!isLoading && isError && (
                       <tr>
-                        <td colSpan={6} className="px-6 py-6 text-center text-red-400">{error}</td>
+                        <td colSpan={6} className="px-6 py-6 text-center text-red-400">{errorMessage}</td>
                       </tr>
                   )}
-                  {!isLoading && !isError && rows.length === 0 && (
+                  {!isLoading && !isError && expenseList.length === 0 && (
                       <tr>
                         <td colSpan={6} className="px-6 py-6 text-center text-gray-400">No expenses found.</td>
                       </tr>
                     )}
-                  {!isLoading && !isError && rows.map((expense)=>{
+                  {!isLoading && !isError && expenseList.map((expense)=>{
                     return (<tr key={expense.expenseId} className='bg-[#17171c] hover:bg-[#1f1f24] transition-colors duration-200'>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
                       <div>
@@ -188,7 +167,7 @@ const ExpenseList = () =>
                       />
 
                       { 
-                        selectedExpenseId==expense.expenseId && (
+                        selectedExpenseId===expense.expenseId && (
                         <Paper ref={menuRef} sx={{ width:320,maxWidth: '100%',backgroundColor:'#2a2a30',position:'absolute',mt:1,right:4,rounded:2,zIndex:10 }}>
                           <MenuList>
                             <MenuItem sx={{":hover":{
@@ -201,7 +180,7 @@ const ExpenseList = () =>
                             </MenuItem>
                             <MenuItem sx={{":hover":{
                               backgroundColor:'#3d3d45',
-                            }, rounded:2}} onClick={()=>dispatch(deleteExpense({id: expense?.expenseId}))}>
+                            }, rounded:2}} onClick={()=>void deleteExpenseMutation(expense.expenseId ?? '')}>
                               <ListItemIcon>
                                 🗑️
                               </ListItemIcon>
@@ -240,7 +219,7 @@ const ExpenseList = () =>
                   <button
                     className="px-3 py-1 rounded border border-gray-600 text-gray-200 disabled:opacity-50"
                     onClick={() => {
-                      let prevpage = Math.max(0, page - 1);
+                      const prevpage = Math.max(0, page - 1);
                       dispatch(setPage(prevpage));
                     }}
                     disabled={!canPrev}
@@ -251,7 +230,7 @@ const ExpenseList = () =>
                     className="px-3 py-1 rounded border border-gray-600 text-gray-200 disabled:opacity-50"
                     onClick={() => 
                       {
-                        let nextpage = page!=totalPages ?Math.min(page+1,totalPages-1) : page;
+                        const nextpage = page!==totalPages ?Math.min(page+1,totalPages-1) : page;
                         dispatch(setPage(nextpage));
                       }
                     }
@@ -262,7 +241,7 @@ const ExpenseList = () =>
                   <button
                     className="px-3 py-1 rounded border border-gray-600 text-gray-200 disabled:opacity-50"
                     onClick={() => {
-                        let lastpage = Math.max(0, totalPages - 1);
+                        const lastpage = Math.max(0, totalPages - 1);
                         dispatch(setPage(lastpage));
                       }
                     }

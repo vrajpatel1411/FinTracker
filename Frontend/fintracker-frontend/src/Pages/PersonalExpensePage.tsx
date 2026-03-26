@@ -1,20 +1,9 @@
-// PersonalExpensePage.tsx
-import { useEffect } from 'react';
 import PersonalExpenseDashboard from '../Component/personalexpense/PersonalExpenseDashboard';
-import { useAppDispatch } from '../Redux/hooks';
-import { getCategories } from '../Redux/Reducers/CategoryReducers/getCategories';
-import { removeCategories } from '../Redux/slice/CategorySlice';
+import { useGetCategoriesQuery } from '../Redux/api/expenseApi';
 
 const PersonalExpensePage = () => {
-  const dispatch = useAppDispatch();
 
-  useEffect(() => {
-    dispatch(getCategories());
-
-    return () => {
-      dispatch(removeCategories());
-    };
-  }, []); // ← empty dep array: run once on mount, cleanup on unmount
+  useGetCategoriesQuery();
 
   return (
     <div className="min-h-screen bg-[#0f0f14] text-white">

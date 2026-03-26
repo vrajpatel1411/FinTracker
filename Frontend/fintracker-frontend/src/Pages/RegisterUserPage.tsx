@@ -13,7 +13,6 @@ import { ValidateEmail, ValidateName, ValidatePassword } from '../Utils/Validate
 import { useNavigate, useSearchParams } from 'react-router';
 
 import Modal from '../Utils/Modal';
-import User from '../Types/User';
 import registerUser  from '../Redux/Reducers/registerUser';
 import { useSelector } from 'react-redux';
 import { RootState } from '../Redux/Store';
@@ -24,8 +23,8 @@ import { useAppDispatch } from '../Redux/hooks';
 const Card = React.lazy(() => import('../styles/card'));
 const SignUpContainer = React.lazy(() => import('../styles/SignUpContainer'));
 
-// import SocialMediaButtons from '../Component/auth/SocialMediaButtons';
 import { AxiosError } from 'axios';
+import { User } from '../Types/auth';
 const SocialMediaButtons = React.lazy(() => import('../Component/auth/SocialMediaButtons'));
 
 
@@ -51,21 +50,16 @@ const RegisterUser = () => {
   const {message,isError}=useSelector((state:RootState)=>state.authReducer)
   const hasValidatedRef = React.useRef(false);
 
-  // check if user is already validated
   React.useEffect(() => {
-    if (hasValidatedRef.current) return; // Ref is used to prevent multiple validations
+    if (hasValidatedRef.current) return; 
     hasValidatedRef.current = true;
 
     dispatch(validateUser())
       .unwrap()
       .then(() => {
-        // console.log(res);
-        navigate("/personal")
-  
+        void navigate("/personal")
       })
-      
       .catch(() => {
-        // Stay on register page
       });
   }, [dispatch, navigate]);
 
@@ -75,12 +69,13 @@ const RegisterUser = () => {
       setModal(true)
       setError(error)
     }
-
-    // Check if we have a error in global state
     if(isError){
       setModal(true)
       setError(message)
     }
+    setTimeout(function() {
+        setModal(false);
+    }, 2000);
   },[queryParameter,isError,message])
 
 
@@ -89,9 +84,7 @@ const RegisterUser = () => {
       event.preventDefault();
       return;
     }
-    
     const data = new FormData(event.currentTarget);
-
     if(data.get('password') !== data.get('confirmed-password')){
         setPasswordMatched(true);
         setPasswordMatchedErrorMessage('Passwords do not match');
@@ -109,18 +102,19 @@ const RegisterUser = () => {
         dispatch(registerUser(user))
           .unwrap()
           .then((res) => {
-            
             if(res.status === false && res.needEmailVerification){
-              localStorage.setItem("userEmail", res.email);
-              navigate("/verify-email");
+              localStorage.setItem("userEmail", res.email ?? '');
+              void navigate("/verify-email");
             }
             else if (res.status === true) {
-              navigate("/home");
+              void navigate("/home");
             }
             })
           .catch((err: AxiosError) => {
+            console.error("Registration failed", err.message);
+          })
+          .finally(() => {
             setLoading(false);
-            console.error("Register failed:", err);
           });
     }
     if(isError){
@@ -136,7 +130,6 @@ const RegisterUser = () => {
       {
             modal && <Modal error={error} setModal={setModal} />
       }
-       
       <CssBaseline enableColorScheme />
       <SignUpContainer direction="column" justifyContent="space-between">
         <Card variant="outlined">

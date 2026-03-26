@@ -1,31 +1,25 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { AuthApiResponse, VerifyOTPType } from "../../Types/auth";
 
-const VerifyOTP = createAsyncThunk(
+const VerifyOTP = createAsyncThunk<AuthApiResponse, VerifyOTPType, { rejectValue: { message: string } }>(
     "auth/verifyOTP",
     async (
-        {otp,userEmail}:VerifyOTPType, 
+        {otp,userEmail},{rejectWithValue} 
     ) => {
         try {
 
-            const registerUser = await axios.post(import.meta.env.VITE_VERIFYOTP_URL, {otp:otp,userEmail:userEmail},{
+            const registerUser = await axios.post<AuthApiResponse>(import.meta.env.VITE_VERIFYOTP_URL as string, {otp:otp,userEmail:userEmail},{
                 withCredentials: true
             });
             return registerUser.data;
-
         }
         catch (error) {
-            if (axios.isAxiosError(error)) {
-                throw new Error(error.response?.data || "An error occurred while verifying OTP");
-            } else {
-                throw new Error("An unexpected error occurred");
-            }       
+            if (axios.isAxiosError(error))
+                return rejectWithValue({ message: error.message ?? "OTP verification failed" });
+            return rejectWithValue({ message: "An unexpected error occurred" });    
         }
 }
 )
 
 export default VerifyOTP;
-export type VerifyOTPType = {
-    otp: string;
-    userEmail: string;
-};

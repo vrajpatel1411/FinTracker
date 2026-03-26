@@ -5,7 +5,7 @@ import { useNavigate } from "react-router"
 const RedirectRoute = () => {
     const navigate = useNavigate()
     useEffect(()=>{
-        navigate('/register')
+        void navigate('/register')
     },)
 
   return (

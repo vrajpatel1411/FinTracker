@@ -45,13 +45,16 @@ export interface pageType{
 }
 
 export interface PersonalExpenseResponseType{
-    status: string,
-    data: {
+    status: "success" | "failure";
+    data?: {
         content: PersonalExpense[];
         links: link[];
         page: pageType;
     }
+    error?: string;
 }
+
+export type PersonalExpenseData = NonNullable<PersonalExpenseResponseType["data"]>;
 
 
 export default PersonalExpenseResponseType;

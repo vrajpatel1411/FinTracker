@@ -1,55 +1,78 @@
-import {  createSlice } from "@reduxjs/toolkit";
-import AuthState from "../../Types/AuthState";
+import {  createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { AuthApiResponse, AuthState } from "../../Types/auth";
 import loginUser  from "../Reducers/loginUser";
 import registerUser  from "../Reducers/registerUser";
-import Oauth2Success from "../Reducers/Oauth2Success";
 import validateUser from "../Reducers/validateUser";
 import VerifyOTP from "../Reducers/VerifyOTP";
-
 
 const initialState: AuthState = {
     isAuthenticated: false,
     message: '',
     isError: false,
     needEmailVerification: false,
-    userEmail: ''
+    email: ''
 }
+
+const handleAuthFulfilled = (state: AuthState, payload: AuthApiResponse) => {
+    if (payload.status === true) {
+        state.isAuthenticated = true;
+        state.isError = false;
+        state.message = payload.message;
+    } else if (payload.status === false && payload.needEmailVerification) {
+        state.isAuthenticated = false;
+        state.isError = false;
+        state.message = "Please verify your email.";
+        state.email = payload.email;
+        state.needEmailVerification = true;
+    } else {
+        state.isAuthenticated = false;
+        state.isError = true;
+        state.message = payload.message || "Authentication failed";
+    }
+};
 
 export const authSlice = createSlice({
     name:"auth",
     initialState,
     reducers:{
         logout: (state) =>{
-
-            
             state.isAuthenticated = false;
             state.message = '';
             state.isError = false;
             state.needEmailVerification = false;
-            state.userEmail = '';
+            state.email = '';
+            localStorage.removeItem('userEmail');
+          
+        },
 
-        }
+        Oauth2Success: (state, action: PayloadAction<{
+          status: boolean;
+          message: string | null;
+          userEmail?: string ;
+        }>) => {
+                  const { status, userEmail } = action.payload;
+                  if (status === true) {
+                    state.isAuthenticated = true;
+                    state.isError = false;
+                    state.message = '';
+                  }else if(status === false && userEmail) {
+                    state.isAuthenticated = false;
+                    state.isError = false;
+                    state.message = "Needs email verification";
+                    state.email = userEmail;
+                    state.needEmailVerification = true;
+                  } else {
+                    state.isAuthenticated = false;
+                    state.isError = true;
+                    state.message = "OAuth failed";
+                  }
+                }
+              
     },
    extraReducers: (builder) => {
     
-    // REGISTER
     builder.addCase(registerUser.fulfilled, (state, action) => {
-      console.log("Register action payload:", action.payload);
-      if (action.payload?.status === true) {
-        state.isAuthenticated = true;
-        state.isError = false;
-        state.message = action.payload.message;
-      } else if(action.payload?.status === false && action.payload?.needEmailVerification ) {
-        state.isAuthenticated = false;
-        state.isError = false;
-        state.message = "Registration successful, please verify your email.";
-        state.userEmail = action.payload?.email;
-        state.needEmailVerification = true;
-      } else {
-        state.isAuthenticated = false;
-        state.isError = true;
-        state.message = action.payload?.message || "Registration failed";
-      }
+      handleAuthFulfilled(state, action.payload);
     });
     builder.addCase(registerUser.rejected, (state, action) => {
       state.isAuthenticated = false;
@@ -59,21 +82,7 @@ export const authSlice = createSlice({
 
     // LOGIN
     builder.addCase(loginUser.fulfilled, (state, action) => {
-      if (action.payload?.status === true) {
-        state.isAuthenticated = true;
-        state.isError = false;
-        state.message = action.payload.message;
-      } else if(action.payload?.status === false && action.payload?.needEmailVerification ) {
-        state.isAuthenticated = false;
-        state.isError = false;
-        state.message = "Registration successful, please verify your email.";
-        state.userEmail = action.payload?.email;
-        state.needEmailVerification = true;
-      } else {
-        state.isAuthenticated = false;
-        state.isError = true;
-        state.message = action.payload?.message || "Login failed";
-      }
+      handleAuthFulfilled(state, action.payload);
     });
     builder.addCase(loginUser.rejected, (state, action) => {
       state.isAuthenticated = false;
@@ -91,30 +100,9 @@ export const authSlice = createSlice({
       
     });
 
-    // OAUTH
-    builder.addCase(Oauth2Success.fulfilled, (state, action) => {
-      console.log("Oauth2Success action payload:", action.payload);
-      if (action.payload.status === true) {
-        state.isAuthenticated = true;
-        state.isError = false;
-        state.message = '';
-      }else if(action.payload.status === false && action.payload.userEmail) {
-        state.isAuthenticated = false;
-        state.isError = false;
-        state.message = "Needs email verification";
-        state.userEmail = action.payload.userEmail;
-      } else {
-        state.isAuthenticated = false;
-        state.isError = true;
-        state.message = "OAuth failed";
-      }
-    });
-
-
     /// VERIFY OTP
     builder.addCase(VerifyOTP.fulfilled,(state, action) => {
-      console.log("VerifyOTP action payload:", action.payload);
-      if (action.payload.status === true) {
+     if (action.payload.status === true) {
         state.isAuthenticated = true;
         state.isError = false;
         state.message = action.payload.message;
@@ -124,7 +112,7 @@ export const authSlice = createSlice({
         state.isAuthenticated = false;
         state.isError = false;
         state.message = "OTP Verification Failed, please try again.";
-        state.userEmail = action.payload.email;
+        state.email = action.payload.email;
         state.needEmailVerification = true;
       }
       else{
@@ -133,8 +121,14 @@ export const authSlice = createSlice({
         state.message = action.payload.message || "OTP Verification failed";
       }
     })
+    builder.addCase(VerifyOTP.rejected, (state, action) => {
+      state.isAuthenticated = false;
+      state.isError = true;
+      state.message = (action.payload as { message: string })?.message || "OTP Verification error";
+      state.needEmailVerification = true;
+    });
   }
 });
 
-
+export const { logout, Oauth2Success } = authSlice.actions;
 export default authSlice.reducer;

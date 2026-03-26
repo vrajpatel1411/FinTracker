@@ -10,10 +10,9 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../Redux/Store';
 
 import validateUser from '../Redux/Reducers/validateUser';
-import {  AxiosError, } from 'axios';
 import { useAppDispatch } from '../Redux/hooks';
 
-// import SocialMediaButtons from '../Component/auth/SocialMediaButtons';
+
 
 const SocialMediaButtons = React.lazy(() => import('../Component/auth/SocialMediaButtons'));
 const Card = React.lazy(() => import('../styles/card'));
@@ -67,6 +66,9 @@ const LoginUser = () => {
           setModal(true)
           setoauthError(message)
         }
+        setTimeout(function() {
+          setModal(false);
+        }, 2000);
     },[error, isError, message])
     
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -85,21 +87,20 @@ const LoginUser = () => {
       dispatch(loginUser(user))
       .unwrap()
       .then((res) => {
-        setLoading(false);
-          if(res.status === false && res.needEmailVerification){
-              console.log("Setting email in local storage:", res.email);
-              localStorage.setItem("userEmail", res.email);
-              navigate("/verify-email");
-            }
-            else if (res.status === true) {
-              navigate("/personal");
-            }
+            if(res.status === false && res.needEmailVerification){
+                localStorage.setItem("userEmail", res?.email);
+                void navigate("/verify-email");
+              }
+              else if (res.status === true) {
+                void navigate("/personal");
+              }
+            })
+      .catch(() => {
+        console.error("Login failed");
       })
-      .catch((err:AxiosError) => {
-        // Optional: handle rejected promise (network error, etc.)
-        console.error("Login failed:", err.message);
-
-      });
+      .finally(()=>{
+        setLoading(false);
+      })
       
     };
     return (
@@ -116,7 +117,7 @@ const LoginUser = () => {
               variant="h4"
               sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
             >
-              Sign up
+              Sign In
             </Typography>
             <Box
             method='post'
@@ -163,7 +164,7 @@ const LoginUser = () => {
                 variant="contained"
                   disabled={!isValid  || emailError || passwordError || isLoading}
               >
-                Sign up
+                {isLoading?"Signing In...":"Sign In"}
               </Button>
               </Box>
               <Divider>

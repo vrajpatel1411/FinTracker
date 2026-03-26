@@ -23,7 +23,7 @@ const validateUser = createAsyncThunk<
     try {
       
       const response = await axios.get<ValidateResponse>(
-        import.meta.env.VITE_VALIDATE_URL,
+        import.meta.env.VITE_VALIDATE_URL as string,
         {
           withCredentials: true,
         }
@@ -33,7 +33,7 @@ const validateUser = createAsyncThunk<
         return response.data;
       } else {
         return thunkAPI.rejectWithValue({
-          message: response.data?.message || "Invalid session",
+          message: response.data?.message ?? "Invalid session",
         });
       }
     } catch (error) {
@@ -41,7 +41,7 @@ const validateUser = createAsyncThunk<
       if (axios.isAxiosError(error) && error.response) {
         
         return thunkAPI.rejectWithValue({
-          message: error.response.data?.error || "Session invalid",
+          message: error.message|| "Session invalid",
         });
       }
 

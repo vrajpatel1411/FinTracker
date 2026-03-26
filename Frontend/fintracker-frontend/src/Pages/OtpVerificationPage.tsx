@@ -9,6 +9,8 @@ import VerifyOTP from "../Redux/Reducers/VerifyOTP";
 import { useNavigate } from "react-router-dom";
 import Modal from "../Utils/Modal";
 import axios from "axios";
+import { AuthApiResponse } from "../Types/auth";
+
 
 
 const OtpVerificationPage = () => {
@@ -50,7 +52,7 @@ const OtpVerificationPage = () => {
 
     useEffect(() => {
         if(!userEmail) {
-          navigate("/login");
+          void navigate("/login");
           return;
         }
     },[userEmail,navigate])
@@ -65,12 +67,12 @@ const OtpVerificationPage = () => {
 
     const requestOtp = () => {
         if(!userEmail) {
-          navigate("/login");
+          void navigate("/login");
           return;
         }
-        axios.get(import.meta.env.VITE_RESENDOTP_URL+"?email="+userEmail, {
+        axios.get<AuthApiResponse>(import.meta.env.VITE_RESENDOTP_URL+"?email="+userEmail, {
             withCredentials: true
-        }).then((response) => {
+        }).then((response ) => {
             if (response.data.status === true) {
                 setOtp("");
                 setModal(true);
@@ -80,12 +82,12 @@ const OtpVerificationPage = () => {
             }
             else{
                 setModal(true);
-                setoauthError(response.data.message || "An error occurred while requesting OTP");
+                setoauthError(response.data.message ?? "An error occurred while requesting OTP");
             }
         })
-        .catch((error) => {
+        .catch(() => {
             setModal(true);
-            setoauthError(error.message || "An error occurred while requesting OTP");
+            setoauthError("An error occurred while requesting OTP");
         });
         
     }
@@ -96,29 +98,29 @@ const OtpVerificationPage = () => {
           requestOtp();
           return;
         }
-        dispatch(VerifyOTP({ otp, userEmail: userEmail || "" }))
+        dispatch(VerifyOTP({ otp, userEmail: userEmail ?? "" }))
             .unwrap()
             .then((res)=>{
                 if(res.status === true) {
                     localStorage.removeItem("expiryTime");
-                    navigate("/personal");
+                    void navigate("/personal");
                     return;
                 }
                 else if(res.status === false && res.email!== "") {
-                    navigate("/verify-email");
+                    void navigate("/verify-email");
                     setModal(true);
                     setoauthError(res.message);
                     return;
                 }
                 else{
                     setModal(true);
-                    setoauthError(res.message || "An error occurred while verifying OTP");
+                    setoauthError(res.message ?? "An error occurred while verifying OTP");
                     return;
                 }
             })
-            .catch((err)=>{
+            .catch(()=>{
                 setModal(true);
-                setoauthError(err.message || "An error occurred while verifying OTP");
+                setoauthError("An error occurred while verifying OTP");
             }) 
         }
 

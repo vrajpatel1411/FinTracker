@@ -1,6 +1,6 @@
-// DashBoardCards.tsx
 import React from 'react';
 import { DashboardCardsSkeleton } from './DashboardCardSkeleton';
+import { categoriesType } from '../../Types/AnalyticsType';
 
 interface CardItem {
   title: string;
@@ -11,8 +11,6 @@ interface CardItem {
   percentageChange?: string;
   trend?: 'up' | 'down';
 }
-
-
 
 interface TrendBadgeProps {
   trend?: 'up' | 'down';
@@ -40,7 +38,7 @@ interface DashBoardCardsProps {
   totalSpending: number;
   monthlySpending: number;
   transactionsCount: number;
-  category:Record<string, number> | null;
+  category: categoriesType | null;
 }
 
 const DashBoardCards: React.FC<DashBoardCardsProps> = ({ isLoading,category,totalSpending,monthlySpending,transactionsCount  }) => {
@@ -64,8 +62,8 @@ const DashBoardCards: React.FC<DashBoardCardsProps> = ({ isLoading,category,tota
     },
     {
       title: 'TOP CATEGORY',
-      category: category ? Object.keys(category)[0] : 'N/A',
-      amount: category?Object.values(category)[0] : 0,
+      category: category?.name ?? 'N/A',
+      amount: category?.value ?? 0,
       currency: 'CA$',
       minorText: "of today's spend",
       percentageChange: '20',

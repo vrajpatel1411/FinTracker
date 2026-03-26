@@ -1,27 +1,33 @@
 import * as React from 'react';
 import { Box, styled } from '@mui/system';
 import {Input as BaseInput } from '@mui/base'
+
+
+interface OTPProps {
+  separator: React.ReactNode;
+  length: number;
+  value: string;
+  onChange: (value: string) => void;
+}
+
 const OTP = ({
   separator,
   length,
   value,
   onChange,
-}: {
-  separator: React.ReactNode;
-  length: number;
-  value: string;
-  onChange: React.Dispatch<React.SetStateAction<string>>;
-}) => {
-  const inputRefs = React.useRef<HTMLInputElement[]>(new Array(length).fill(null));
+}: OTPProps) => {
+  const inputRefs = React.useRef<Array<HTMLInputElement | null>>(
+    Array.from({ length }, () => null)
+  );
 
   const focusInput = (targetIndex: number) => {
     const targetInput = inputRefs.current[targetIndex];
-    targetInput.focus();
+    targetInput?.focus();
   };
 
   const selectInput = (targetIndex: number) => {
     const targetInput = inputRefs.current[targetIndex];
-    targetInput.select();
+    targetInput?.select();
   };
 
   const handleKeyDown = (
@@ -50,12 +56,7 @@ const OTP = ({
         break;
       case 'Delete':
         event.preventDefault();
-        onChange((prevOtp) => {
-          const otp =
-            prevOtp.slice(0, currentIndex) + prevOtp.slice(currentIndex + 1);
-          return otp;
-        });
-
+        onChange(value.slice(0, currentIndex) + value.slice(currentIndex + 1));
         break;
       case 'Backspace':
         event.preventDefault();
@@ -64,13 +65,11 @@ const OTP = ({
           selectInput(currentIndex - 1);
         }
 
-        onChange((prevOtp) => {
-          const otp =
-            prevOtp.slice(0, currentIndex) + prevOtp.slice(currentIndex + 1);
-          return otp;
-        });
+        {
+          const targetIndex = currentIndex > 0 ? currentIndex - 1 : 0;
+          onChange(value.slice(0, targetIndex) + value.slice(targetIndex + 1));
+        }
         break;
-
       default:
         break;
     }
@@ -83,31 +82,20 @@ const OTP = ({
     const currentValue = event.target.value;
     let indexToEnter = 0;
 
-    while (indexToEnter <= currentIndex) {
-      if (inputRefs.current[indexToEnter].value && indexToEnter < currentIndex) {
+    while (indexToEnter <= currentIndex ) {
+      const ref=inputRefs.current[indexToEnter]
+      if (ref?.value && indexToEnter < currentIndex) {
         indexToEnter += 1;
       } else {
         break;
       }
     }
-    onChange((prev) => {
-      const otpArray = prev.split('');
-      const lastValue = currentValue[currentValue.length - 1];
-      otpArray[indexToEnter] = lastValue;
-      return otpArray.join('');
-    });
-    if (currentValue !== '') {
-      if (currentIndex < length - 1) {
-        focusInput(currentIndex + 1);
-      }
+    const otpArray = value.split('');
+    otpArray[indexToEnter] = currentValue[currentValue.length - 1] ?? '';
+    onChange(otpArray.join(''));
+    if (currentValue !== '' && currentIndex < length - 1) {
+      focusInput(currentIndex + 1);
     }
-  };
-
-  const handleClick = (
-
-    currentIndex: number,
-  ) => {
-    selectInput(currentIndex);
   };
 
   const handlePaste = (
@@ -124,7 +112,8 @@ const OTP = ({
       let indexToEnter = 0;
 
       while (indexToEnter <= currentIndex) {
-        if (inputRefs.current[indexToEnter].value && indexToEnter < currentIndex) {
+        const ref = inputRefs.current[indexToEnter];
+        if (ref?.value && indexToEnter < currentIndex) {
           indexToEnter += 1;
         } else {
           break;
@@ -144,7 +133,7 @@ const OTP = ({
 
   return (
     <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-      {new Array(length).fill(null).map((_, index) => (
+      {Array.from({ length }).map((_, index) => (
         <React.Fragment key={index}>
           <BaseInput
             slots={{
@@ -153,12 +142,12 @@ const OTP = ({
             aria-label={`Digit ${index + 1} of OTP`}
             slotProps={{
               input: {
-                ref: (ele: HTMLInputElement) => {
-                  inputRefs.current[index] = ele!;
+                ref: (ele: HTMLInputElement | null) => {
+                  inputRefs.current[index] = ele;
                 },
                 onKeyDown: (event:React.KeyboardEvent<HTMLInputElement>) => handleKeyDown(event, index),
                 onChange: (event:React.ChangeEvent<HTMLInputElement>) => handleChange(event, index),
-                onClick: () => handleClick(index),
+                onClick: () => selectInput(index),
                 onPaste: (event:React.ClipboardEvent<HTMLInputElement>) => handlePaste(event, index),
                 value: value[index] ?? '',
               },
