@@ -26,7 +26,6 @@ public class AnalyticController {
     @GetMapping("/analytics")
     public ResponseEntity<AnalyticsDTO> analytics(@RequestHeader("userEmail") String userEmail ,
                                                   @RequestHeader("userId") String userId, @RequestParam(name="date") String todayDate ) throws Exception {
-        log.info("Analytics request received");
         return ResponseEntity.ok(this.analyticsService.generateAnalytics(userEmail,userId, LocalDate.parse(todayDate)));
     }
 }

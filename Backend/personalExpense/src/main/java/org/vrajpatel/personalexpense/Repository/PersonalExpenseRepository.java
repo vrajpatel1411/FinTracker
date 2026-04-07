@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import org.vrajpatel.personalexpense.model.CategoriesModel;
 import org.vrajpatel.personalexpense.model.PersonalExpenseModel;
 import org.vrajpatel.personalexpense.model.User;
+import org.vrajpatel.personalexpense.responseDto.ExpenseSummary;
 import org.vrajpatel.personalexpense.responseDto.PersonalExpenseDto;
 
 import java.time.LocalDate;
@@ -19,12 +20,6 @@ import java.util.UUID;
 @Repository
 public interface PersonalExpenseRepository extends JpaRepository<PersonalExpenseModel, UUID> {
 
-//    @Query("""
-//  select p
-//  from PersonalExpenseModel p
-//  where p.userId = :userId
-//    and p.deleted = false
-//""")
     @Query("""
     select new org.vrajpatel.personalexpense.responseDto.PersonalExpenseDto(
         p.expenseId,
@@ -48,51 +43,21 @@ public interface PersonalExpenseRepository extends JpaRepository<PersonalExpense
     Page<PersonalExpenseDto> findAllByUserId(@Param("userId") UUID userId, Pageable pageable);
 
     @Query("""
-        Select sum(p.amount) from PersonalExpenseModel p where p.userId = :userId and p.deleted = false and p.expenseDate=:todayDate
-    """)
-    Double findTodayExpense(@Param("userId") UUID userId, @Param("todayDate") LocalDate todayDate);
-
-    @Query("""
-    Select sum(p.amount) from PersonalExpenseModel p where p.userId = :userId and p.expenseDate between :fromDate and :toDate and p.deleted = false
-""")
-    Double findMonthlyExpense(@Param("userId") UUID userId, @Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate);
-
-    @Query("""
-    SELECT c.categoryName, sum(p.amount)
+    SELECT c.categoryName, sum(p.amount) as amount
     FROM PersonalExpenseModel p
     JOIN p.category c
     WHERE p.userId = :userId
     AND p.deleted = false
     AND p.expenseDate BETWEEN :firstDay AND :lastDay
     GROUP BY c.categoryName
-    ORDER BY COUNT(p) DESC
 """)
-    List<Object[]> findCategoryTransactionCount(
+    List<Object[]> findCategoryWiseSpending(
             @Param("userId") UUID userId,
             @Param("firstDay") LocalDate firstDay,
             @Param("lastDay") LocalDate lastDay
     );
 
     List<PersonalExpenseModel> user(User user);
-
-    @Query("""
-        Select 
-            c.categoryName,sum(p.amount) as total
-            from PersonalExpenseModel p
-            JOIN p.category c
-            WHERE p.userId = :userId
-            AND p.deleted = false
-            AND p.expenseDate BETWEEN :firstDay AND :lastDay
-            GROUP BY c.categoryName
-            ORDER BY total DESC
-            limit 1 
-""")
-    List<Object[]> findTopCategory(UUID userId, LocalDate firstDay, LocalDate lastDay);
-
-    @Query("""
-        Select Count(*) from PersonalExpenseModel p where p.userId = :userId and p.deleted = false and p.expenseDate between :firstDate and :lastDate
-""")
-    Long getTotalTransactionInAMonth(@Param("userId") UUID uuid,@Param("firstDate") LocalDate firstDate,@Param("lastDate") LocalDate lastDate);
 
     @Query(value = """
     SELECT 
@@ -116,4 +81,21 @@ public interface PersonalExpenseRepository extends JpaRepository<PersonalExpense
             @Param("givenDate") LocalDate givenDate
     );
 
+    @Query("""
+        SELECT new org.vrajpatel.personalexpense.responseDto.ExpenseSummary(
+            cast(SUM(CASE WHEN p.expenseDate = :todayDate THEN p.amount ELSE 0.0 END) as double ),
+            cast( SUM(CASE WHEN p.expenseDate BETWEEN :fromDate AND :toDate THEN p.amount ELSE 0.0 END) as double ),
+            COUNT(CASE WHEN p.expenseDate BETWEEN :fromDate AND :toDate THEN 1 END)
+        )
+        FROM PersonalExpenseModel p
+        WHERE p.userId = :userId
+        AND p.deleted = false
+    """)
+    ExpenseSummary findSummary(
+            @Param("userId") UUID userId,
+            @Param("todayDate") LocalDate todayDate,
+            @Param("fromDate") LocalDate fromDate,
+            @Param("toDate") LocalDate toDate
+
+    );
 }

@@ -27,6 +27,7 @@ import org.vrajpatel.personalexpense.requestDto.PatchExpenseDTO;
 import org.vrajpatel.personalexpense.requestDto.AddExpenseDto;
 import org.vrajpatel.personalexpense.responseDto.PersonalExpenseDto;
 import org.vrajpatel.personalexpense.responseDto.PresignedUrlResponse;
+import org.vrajpatel.personalexpense.utils.CacheEvictionService;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -46,16 +47,19 @@ public class PersonalExpenseService {
 
     private final ReceiptRepository receiptRepository;
 
-    PersonalExpenseService(ReceiptRepository receiptRepository,CategoryRepository categoryRepository, @Qualifier("expensePatchMapperImpl") ExpensePatchMapper expenseMapper, S3Service s3Service, UserRepository userRepository, PersonalExpenseRepository personalExpenseRepository) {
+    private final CacheEvictionService cacheEvictionService;
+
+    PersonalExpenseService(CacheEvictionService cacheEvictionService,ReceiptRepository receiptRepository,CategoryRepository categoryRepository, @Qualifier("expensePatchMapperImpl") ExpensePatchMapper expenseMapper, S3Service s3Service, UserRepository userRepository, PersonalExpenseRepository personalExpenseRepository) {
         this.categoryRepository = categoryRepository;
         this.receiptRepository=receiptRepository;
+        this.cacheEvictionService = cacheEvictionService;
         this.s3Service = s3Service;
         this.userRepository = userRepository;
         this.personalExpenseRepository = personalExpenseRepository;
         this.expenseMapper=expenseMapper;
     }
 
-    @Cacheable(value="personalExpenses",key="{#page,#size}")
+    @Cacheable(value="personalExpenses",key="#userId+'_'+#page + '_' + #size")
     @Transactional
     public Page<PersonalExpenseDto> findAll(String userId,int page, int size) {
         Sort sortAsc = Sort.by("expenseDate").descending().and(Sort.by("updatedAt").descending());
@@ -74,7 +78,7 @@ public class PersonalExpenseService {
     }
 
     @Transactional
-    @CacheEvict(value = "personalExpenses", allEntries = true)
+    @CacheEvict(value = "analytics", key = "#userId")
     public PersonalExpenseDto addExpense(String userId, AddExpenseDto expense) throws AddExpenseException {
         try {
             User user = userRepository.findById(UUID.fromString(userId)).orElseThrow(() -> new UserNotFoundError("User Not Found with Id " + userId));
@@ -101,6 +105,7 @@ public class PersonalExpenseService {
             if(expense.isHasReceipt() && response!=null){
                 dto.setReceiptUrl(response.getUrl());
             }
+            cacheEvictionService.evictCacheByPrefix("personalExpenses::"+userId);
             return dto;
         }
         catch(Exception e){
@@ -109,7 +114,7 @@ public class PersonalExpenseService {
     }
 
     @Transactional
-    @CacheEvict(value = "personalExpenses", allEntries = true)
+    @CacheEvict(value = "analytics", key = "#userId")
     public PersonalExpenseDto updateExpense(String expenseId,String userId, PatchExpenseDTO expense) throws UnAuthorizedException, CategoryNotFoundError {
         PersonalExpenseModel personalExpense=personalExpenseRepository
                                             .findById(UUID.fromString(expenseId))
@@ -148,14 +153,16 @@ public class PersonalExpenseService {
         if (presignedResponse != null) {
             dto.setReceiptUrl(presignedResponse.getUrl()); // upload URL for frontend
         }
+        cacheEvictionService.evictCacheByPrefix("personalExpenses::"+userId);
         return dto;
     }
     @Transactional
-    @CacheEvict(value = "personalExpenses", allEntries = true)
-    public Boolean deleteExpense(String expenseId) {
+    @CacheEvict(value = "analytics", key = "#userId")
+    public Boolean deleteExpense(String userId,String expenseId) {
         PersonalExpenseModel expense=personalExpenseRepository.findById(UUID.fromString(expenseId)).orElseThrow(()->new EntityNotFoundException("Expense Not found"));
         expense.setDeleted(true);
         personalExpenseRepository.save(expense);
+        cacheEvictionService.evictCacheByPrefix("personalExpenses::"+userId);
         return true;
     }
 }

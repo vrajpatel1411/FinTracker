@@ -13,10 +13,7 @@ import java.util.Map;
 @Setter
 @NoArgsConstructor
 public class AnalyticsDTO implements Serializable {
-    private Double todayExpense;
-    private Double monthlyExpense;
-    private Map<String,Double> category;
-    private Double totalTransactions;
+    private ExpenseSummary expenseSummary;
     private CategoriesDTO categoriesDTO;
     private DailyExpenseDTO dailyExpenseDTO;
 }

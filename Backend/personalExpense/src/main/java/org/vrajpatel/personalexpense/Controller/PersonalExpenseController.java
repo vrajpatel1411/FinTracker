@@ -1,6 +1,7 @@
 package org.vrajpatel.personalexpense.Controller;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -63,7 +64,7 @@ public class PersonalExpenseController {
 
     @PostMapping("/")
     public ResponseEntity<GenericResponseDTO<PersonalExpenseDto>> addExpense(@RequestHeader("userEmail") String userEmail,
-                                                                 @RequestHeader("userId") String userId,@RequestBody AddExpenseDto expense) throws AddExpenseException, UnAuthorizedException {
+                                                                 @RequestHeader("userId") String userId,@RequestBody @Valid AddExpenseDto expense) throws AddExpenseException, UnAuthorizedException {
         if(userEmail.isEmpty() || userId.isEmpty() ) {
              throw new UnAuthorizedException("Unauthorized User");
         }
@@ -85,7 +86,7 @@ public class PersonalExpenseController {
             @PathVariable("id") String expenseId,
             @RequestHeader("userEmail") String userEmail,
             @RequestHeader("userId") String userId,
-            @RequestBody PatchExpenseDTO expense) {
+            @RequestBody @Valid PatchExpenseDTO expense) {
 
         if (userEmail.isBlank() || userId.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -112,12 +113,12 @@ public class PersonalExpenseController {
     }
 
     @DeleteMapping("/expense/{id}")
-    public ResponseEntity<GenericResponseDTO<String>> deleteExpense(@PathVariable("id") String expenseId) throws Exception{
+    public ResponseEntity<GenericResponseDTO<String>> deleteExpense( @RequestHeader("userId") String userId,@PathVariable("id") String expenseId) throws Exception{
         if(expenseId.isEmpty()) {
             throw new NullPointerException("Expense Id is null or empty");
         }
         try {
-            Boolean status = personalExpenseService.deleteExpense(expenseId);
+            Boolean status = personalExpenseService.deleteExpense(userId,expenseId);
             if(status) {
                 GenericResponseDTO<String> response = GenericResponseDTO.success("Deleted expense");
                 return ResponseEntity.ok(response);
