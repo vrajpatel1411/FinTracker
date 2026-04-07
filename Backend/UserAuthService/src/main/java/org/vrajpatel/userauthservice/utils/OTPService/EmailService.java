@@ -1,6 +1,7 @@
 package org.vrajpatel.userauthservice.utils.OTPService;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
@@ -9,10 +10,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService {
 
-    @Autowired
-    private JavaMailSender mailSender;
+    private final Logger log = LoggerFactory.getLogger(EmailService.class);
 
-    @Async
+    private final JavaMailSender mailSender;
+
+    EmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
+
+    @Async("email_service_thread_executor")
     public void sendEmail(String to, String subject, String text) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -23,8 +29,7 @@ public class EmailService {
             mailSender.send(message);
         }
         catch (Exception e) {
-            e.printStackTrace();
-
+            log.error("Faced Error sending Email : {}", e.getMessage());
         }
     }
 

@@ -1,5 +1,6 @@
 package org.vrajpatel.userauthservice.controller;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -10,31 +11,24 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 
-import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
 
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletResponse;
+import org.vrajpatel.userauthservice.Exception.*;
 import org.vrajpatel.userauthservice.Exception.AuthenticationServiceException.UnAuthorizedException;
-import org.vrajpatel.userauthservice.Exception.AuthenticationServiceException.UserExistException;
 import org.vrajpatel.userauthservice.Exception.AuthenticationServiceException.UserNotFound;
 
-import org.vrajpatel.userauthservice.Exception.BadRequestException;
-import org.vrajpatel.userauthservice.Exception.EmptyAccessTokenException;
-import org.vrajpatel.userauthservice.Exception.OTPException;
 import org.vrajpatel.userauthservice.ResponseDTO.AccessTokenResponse;
 import org.vrajpatel.userauthservice.ResponseDTO.AuthResponse;
 import org.vrajpatel.userauthservice.ResponseDTO.LoginResponseDTO;
 import org.vrajpatel.userauthservice.ResponseDTO.ValidationResponseDto;
 
-import org.vrajpatel.userauthservice.model.User;
-import org.vrajpatel.userauthservice.requestDTO.JwtDto;
-import org.vrajpatel.userauthservice.requestDTO.OtpDto;
-import org.vrajpatel.userauthservice.requestDTO.RegisterUserDto;
-import org.vrajpatel.userauthservice.requestDTO.UserDTO;
+import org.vrajpatel.userauthservice.requestDTO.*;
 import org.vrajpatel.userauthservice.service.AuthService;
-import org.vrajpatel.userauthservice.service.UserService;
 import org.vrajpatel.userauthservice.utils.JwtUtils.TokenProvider;
 import org.vrajpatel.userauthservice.utils.SetCookies;
 
@@ -47,16 +41,16 @@ public class AuthController {
 
 
     private final AuthService authService;
-    private final UserService userService;
     private final TokenProvider tokenProvider;
+    private final SetCookies setCookies;
 
     private final Logger logger= LoggerFactory.getLogger(AuthController.class);
 
 
-    AuthController(AuthService authService, UserService userService, TokenProvider tokenProvider) {
+    AuthController(AuthService authService, TokenProvider tokenProvider, SetCookies setCookies) {
         this.authService = authService;
-        this.userService = userService;
         this.tokenProvider = tokenProvider;
+        this.setCookies = setCookies;
     }
 
 
@@ -92,14 +86,14 @@ public class AuthController {
                             )))
     })
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody UserDTO userDTO) {
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginUserDto loginUserDto) {
         AuthResponse authResponse=new AuthResponse();
         try{
-            LoginResponseDTO response=authService.loginService(userDTO);
+            LoginResponseDTO response=authService.loginService(loginUserDto);
             if(response.isEmailVerified()){
                 authResponse.setStatus(true);
                 authResponse.setMessage("Successfully logged in");
-                return ResponseEntity.ok().headers(SetCookies.setCookies(new HttpHeaders(),response.getAccessToken(),response.getRefreshToken())).body(authResponse);
+                return ResponseEntity.ok().headers(setCookies.setCookies(new HttpHeaders(),response.getAccessToken(),response.getRefreshToken())).body(authResponse);
             }
             else{
                 authResponse.setStatus(false);
@@ -108,6 +102,13 @@ public class AuthController {
                 authResponse.setEmail(response.getEmail());
                 return ResponseEntity.ok().body(authResponse);
             }
+        }
+        catch(TooManyRequestException e){
+            authResponse.setStatus(false);
+            authResponse.setMessage("Too many requests");
+            authResponse.setNeedEmailVerification(true);
+            authResponse.setEmail(loginUserDto.getEmail());
+            return new ResponseEntity<>(authResponse,HttpStatus.TOO_MANY_REQUESTS);
         }
         catch (UserNotFound ex){
             logger.warn("User Not Found ");
@@ -138,35 +139,27 @@ public class AuthController {
             )))
     })
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterUserDto userDTO) {
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterUserDto userDTO) throws Exception {
         AuthResponse authResponse=new AuthResponse();
-        try{
-            LoginResponseDTO response=authService.registerService(userDTO);
-            if(response.isEmailVerified()){
-                authResponse.setStatus(true);
-                authResponse.setMessage("Successfully Registered");
-                return ResponseEntity.ok().headers(SetCookies.setCookies(new HttpHeaders(),response.getAccessToken(),response.getRefreshToken())).body(authResponse);
-            }
-            else{
-                authResponse.setStatus(false);
-                authResponse.setNeedEmailVerification(true);
-                authResponse.setMessage("Email needs to be verified");
-                authResponse.setEmail(response.getEmail());
-                return ResponseEntity.ok().body(authResponse);
-            }
+        LoginResponseDTO response=authService.registerService(userDTO);
+        logger.info("Service call finished");
+        if(response.isEmailVerified()){
+            logger.info("Registration is successful");
+            authResponse.setStatus(true);
+            authResponse.setMessage("Successfully Registered");
+            return ResponseEntity.ok().headers(setCookies.setCookies(new HttpHeaders(),response.getAccessToken(),response.getRefreshToken())).body(authResponse);
         }
-        catch (UserExistException ex){
-            logger.warn("User Already Exist");
+        else{
+            logger.info("Registration is successful but need email verification");
             authResponse.setStatus(false);
-            authResponse.setMessage("User Already Exist");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(authResponse);
-        }
-        catch (Exception ex){
-            authResponse.setStatus(false);
-            authResponse.setMessage("Internal Server");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(authResponse);
+            authResponse.setNeedEmailVerification(true);
+            authResponse.setMessage("Email needs to be verified");
+            authResponse.setEmail(response.getEmail());
+            return ResponseEntity.ok().body(authResponse);
         }
     }
+
+
 
 
     @Operation(
@@ -186,30 +179,27 @@ public class AuthController {
                     content = @Content(schema = @Schema(implementation = ValidationResponseDto.class)))
     })
     @GetMapping("/validate")
-    public ResponseEntity<ValidationResponseDto> validateUser(@CookieValue("accessToken") @Nullable  String accessToken, @CookieValue("refreshToken")  String refreshToken) throws ExpiredJwtException {
-        // Update according to the RefreshToken and AccessToken
+    public ResponseEntity<ValidationResponseDto> validateUser(@CookieValue(value = "accessToken", required = false) String accessToken, @CookieValue(value = "refreshToken", required = false)  String refreshToken) throws ExpiredJwtException {
         ValidationResponseDto validationResponseDto=new ValidationResponseDto();
         try {
             if(accessToken==null){
                 throw new EmptyAccessTokenException();
             }
-            Boolean isValid=authService.validate(accessToken);
-            if(isValid){
-                validationResponseDto.setValid(true);
-                validationResponseDto.setMessage("Successfully logged in");
-                return ResponseEntity.ok().body(validationResponseDto);
-            }
-            else{
-                validationResponseDto.setValid(false);
-                validationResponseDto.setMessage("Invalid access token");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponseDto);
-            }
+            tokenProvider.validateandExtractToken(accessToken);
+            validationResponseDto.setValid(true);
+            validationResponseDto.setMessage("Successfully logged in");
+            return ResponseEntity.ok().body(validationResponseDto);
         }catch (EmptyAccessTokenException | ExpiredJwtException ex){
             try{
+                if(refreshToken==null){
+                    validationResponseDto.setValid(false);
+                    validationResponseDto.setMessage("Invalid refresh token");
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponseDto);
+                }
                 String newAccessToken=authService.getNewAccessToken(refreshToken);
                 validationResponseDto.setValid(true);
                 validationResponseDto.setMessage("Successfully logged in");
-                String cookie=SetCookies.getAccessCookie(newAccessToken);
+                String cookie=setCookies.getAccessCookie(newAccessToken);
                 return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE,cookie).body(validationResponseDto);
 
             }catch (UserNotFound e){
@@ -218,7 +208,7 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(validationResponseDto);
             }catch (UnAuthorizedException e){
                 validationResponseDto.setValid(false);
-                validationResponseDto.setMessage(e.getMessage());
+                validationResponseDto.setMessage("Unauthorized access");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponseDto);
 
             }catch (Exception e){
@@ -226,9 +216,10 @@ public class AuthController {
                 validationResponseDto.setMessage("Internal Server");
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(validationResponseDto);
             }
-        }catch (UnAuthorizedException ex){
+        }catch (Exception ex){
             validationResponseDto.setValid(false);
-            validationResponseDto.setMessage(ex.getMessage());
+            logger.error("Internal Server Error ",ex);
+            validationResponseDto.setMessage("Internal Server Error");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponseDto);
         }
     }
@@ -250,16 +241,14 @@ public class AuthController {
     public ResponseEntity<ValidationResponseDto> validate(@Valid @RequestBody JwtDto jwtDto) {
         ValidationResponseDto validationResponseDto=new ValidationResponseDto();
         try {
-            Boolean isValid=authService.validate(jwtDto.getJwt());
-            if (isValid) {
-
-                UUID id = tokenProvider.getUserIdFromJWT(jwtDto.getJwt());
-                User user=userService.findUserById(id);
+            Claims claims =authService.validate(jwtDto.getJwt());
+            String userId = claims.getSubject();
+            String email = claims.get("email", String.class);
+            if(StringUtils.hasText(email)) {
                 validationResponseDto.setValid(true);
                 validationResponseDto.setMessage("Token is valid");
-                validationResponseDto.setUserEmail(user.getEmail());
-                validationResponseDto.setUserId(user.getUserId().toString());
-
+                validationResponseDto.setUserEmail(email);
+                validationResponseDto.setUserId(userId);
                 return ResponseEntity.ok().body(validationResponseDto);
             } else {
                 logger.warn("Error Validating JWT Token");
@@ -268,9 +257,9 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponseDto);
             }
         }catch (Exception e){
-            logger.warn("JWT Token"+ e.getMessage());
+            logger.warn("JWT Token {}", e.getMessage());
             validationResponseDto.setValid(false);
-            validationResponseDto.setMessage(e.getMessage());
+            validationResponseDto.setMessage("Unable to validate JWT Token, Try again!");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validationResponseDto);
         }
     }
@@ -290,34 +279,26 @@ public class AuthController {
                     content = @Content(schema = @Schema(implementation = AccessTokenResponse.class)))
     })
     @PostMapping("/getNewAccessToken")
-    public ResponseEntity<AccessTokenResponse> getNewAccessToken(@Valid @RequestBody JwtDto jwtDto) {
-        AccessTokenResponse accessTokenResponse=new AccessTokenResponse();
-        try{
-            String newAccessToken=authService.getNewAccessToken(jwtDto.getJwt());
-            logger.info("New access token generated");
-            UUID id=tokenProvider.getUserIdFromJWT(newAccessToken);
-            logger.warn(id.toString());
-            User user=userService.findUserById(id);
-            accessTokenResponse.setUserEmail(user.getEmail());
-            accessTokenResponse.setUserId(user.getUserId().toString());
-            accessTokenResponse.setAccessToken(newAccessToken);
-            return ResponseEntity.ok().body(accessTokenResponse);
-
-        }catch (Exception e){
-            throw new BadRequestException(e.getMessage());
-        }
+    public ResponseEntity<AccessTokenResponse> getNewAccessToken(@Valid @RequestBody JwtDto jwtDto) throws UserNotFound, UnAuthorizedException {
+        AccessTokenResponse accessTokenResponse = new AccessTokenResponse();
+        String newAccessToken = authService.getNewAccessToken(jwtDto.getJwt());
+        UUID id = tokenProvider.getUserIdFromJWT(newAccessToken);
+        String email=tokenProvider.getEmailFromJWT(newAccessToken);
+        accessTokenResponse.setUserEmail(email);
+        accessTokenResponse.setUserId(id.toString());
+        accessTokenResponse.setAccessToken(newAccessToken);
+        return ResponseEntity.ok().body(accessTokenResponse);
     }
 
     @PostMapping("/verifyOtp")
-    public ResponseEntity<AuthResponse> verifyOTp(@Valid @RequestBody OtpDto otp){
+    public ResponseEntity<AuthResponse> verifyOtp(@Valid @RequestBody OtpDto otp){
+        AuthResponse authResponse=new AuthResponse();
         try{
-            logger.warn(otp.toString());
-            AuthResponse authResponse=new AuthResponse();
             LoginResponseDTO loginResponseDTO=authService.verifyOTP(otp);
             if(loginResponseDTO.isEmailVerified()){
                 authResponse.setStatus(true);
                 authResponse.setMessage("Successfully logged in");
-                return ResponseEntity.ok().headers(SetCookies.setCookies(new HttpHeaders(),loginResponseDTO.getAccessToken(),loginResponseDTO.getRefreshToken())).body(authResponse);
+                return ResponseEntity.ok().headers(setCookies.setCookies(new HttpHeaders(),loginResponseDTO.getAccessToken(),loginResponseDTO.getRefreshToken())).body(authResponse);
             }
             else{
                 authResponse.setStatus(false);
@@ -325,44 +306,67 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(authResponse);
             }
         }catch (OTPException e){
-            AuthResponse authResponse=new AuthResponse();
             authResponse.setEmail(otp.getUserEmail());
             authResponse.setStatus(false);
-            authResponse.setMessage("OTP verification failed");
-            return ResponseEntity.ok().body(authResponse);
-
-        }catch (Exception e){
-            AuthResponse authResponse=new AuthResponse();
+            authResponse.setMessage(e.getMessage());
+            return new ResponseEntity<>(authResponse,HttpStatus.BAD_REQUEST);
+        }catch (TooManyAttemptException ex){
+            authResponse.setEmail(otp.getUserEmail());
+            authResponse.setStatus(false);
+            authResponse.setMessage(ex.getMessage());
+            return new ResponseEntity<>(authResponse,HttpStatus.TOO_MANY_REQUESTS);
+        }
+        catch (Exception e){
             authResponse.setStatus(false);
             authResponse.setMessage(e.getMessage());
-            return ResponseEntity.badRequest().body(authResponse);
+            return new ResponseEntity<>(authResponse,HttpStatus.BAD_REQUEST);
         }
     }
 
-    @GetMapping("/resendOtp")
-    public ResponseEntity<AuthResponse> resendOTP(@RequestParam("email") String email){
+    @PostMapping("/logout")
+    public ResponseEntity<AuthResponse> logout(
+            @CookieValue(value = "refreshToken", required = false) String refreshToken,
+            HttpServletResponse response) {
+        authService.logout(refreshToken);
+        response.addHeader(HttpHeaders.SET_COOKIE, setCookies.clearAccessCookie());
+        response.addHeader(HttpHeaders.SET_COOKIE, setCookies.clearRefreshCookie());
+        AuthResponse authResponse = new AuthResponse();
+        authResponse.setStatus(true);
+        authResponse.setMessage("Logged out successfully");
+        return ResponseEntity.ok().body(authResponse);
+    }
+
+    @PostMapping("/resendOtp")
+    public ResponseEntity<AuthResponse> resendOtp(@RequestBody @Valid ResendOtpDto dto){
+        String email = dto.getEmail();
         try{
             boolean res=authService.sendOTP(email);
+            AuthResponse authResponse=new AuthResponse();
+            authResponse.setEmail(email);
             if(res){
-                AuthResponse authResponse=new AuthResponse();
-                authResponse.setEmail(email);
                 authResponse.setStatus(true);
+                authResponse.setMessage("Resend OTP successfully");
                 return ResponseEntity.ok().body(authResponse);
             }
             else{
-                AuthResponse authResponse=new AuthResponse();
-                authResponse.setEmail(email);
                 authResponse.setStatus(false);
                 authResponse.setMessage("Failed to send OTP");
-                return ResponseEntity.badRequest().body(authResponse);
+                return new ResponseEntity<>(authResponse,HttpStatus.BAD_REQUEST);
             }
+        }
+        catch (TooManyRequestException ex){
+            AuthResponse authResponse=new AuthResponse();
+            authResponse.setEmail(email);
+            authResponse.setStatus(false);
+            authResponse.setMessage(ex.getMessage());
+            return new ResponseEntity<>(authResponse,HttpStatus.TOO_MANY_REQUESTS);
         }
         catch(Exception e){
             AuthResponse authResponse=new AuthResponse();
             authResponse.setEmail(email);
             authResponse.setStatus(false);
             authResponse.setMessage("Failed to send OTP");
-            return ResponseEntity.badRequest().body(authResponse);
+            return new ResponseEntity<>(authResponse,HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

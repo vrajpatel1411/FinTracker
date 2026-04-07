@@ -2,12 +2,12 @@ package org.vrajpatel.userauthservice.requestDTO;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
-import org.aspectj.bridge.Message;
+import lombok.NoArgsConstructor;
 
 @Data
-public class UserDTO {
+@NoArgsConstructor
+public class LoginUserDto {
 
     @Email(message = "Email is not in proper format")
     @NotNull(message = "Email should not be empty")
@@ -16,7 +16,7 @@ public class UserDTO {
     @NotNull(message = "Password cannot be empty")
     private String password;
 
-    public UserDTO(String username, String password) {
+    public LoginUserDto(String username, String password) {
         this.email = username;
         this.password = password;
     }

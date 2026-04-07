@@ -1,30 +1,24 @@
 package org.vrajpatel.userauthservice.utils.JwtUtils;
 
+import io.jsonwebtoken.Claims;
+import jakarta.annotation.Nonnull;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.vrajpatel.userauthservice.Exception.BadRequestException;
-import org.vrajpatel.userauthservice.Exception.CustomAuthenticationError;
-import org.vrajpatel.userauthservice.Repository.UserRepository;
-import org.vrajpatel.userauthservice.model.User;
+import org.vrajpatel.userauthservice.Exception.AuthenticationServiceException.UnAuthorizedException;
 import org.vrajpatel.userauthservice.utils.UserPrincipal;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -34,76 +28,54 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
     private final TokenProvider tokenProvider;
 
-
-    private final UserRepository userRepository;
-
-    public TokenAuthenticationFilter( TokenProvider tokenProvider, UserRepository userRepository) {
+    public TokenAuthenticationFilter(TokenProvider tokenProvider) {
         this.tokenProvider = tokenProvider;
-        this.userRepository = userRepository;
     }
 
     private boolean isPublicEndpoint(String requestURI) {
-
         return requestURI.startsWith("/userauth/api/auth") ||
                 requestURI.startsWith("/oauth2") ||
-                requestURI.startsWith("/user/api/") ||
-                requestURI.startsWith("/v3") || requestURI.startsWith("/actuator");
+                requestURI.startsWith("/v3") ||
+                requestURI.startsWith("/actuator") ||
+                requestURI.startsWith("/user/api");
     }
 
-    @SuppressWarnings("NullableProblems")
     @Override
-    protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException, AuthenticationException {
-        try{
-            String requestURI = request.getRequestURI();
-            logger.info(">>> Incoming Request: {} {}", request.getMethod(), request.getRequestURI());
-
-            if (isPublicEndpoint(requestURI)) {
-                filterChain.doFilter(request, response); // Skip the filter
+    protected void doFilterInternal(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull FilterChain filterChain) throws IOException {
+        try {
+            if (isPublicEndpoint(request.getRequestURI())) {
+                filterChain.doFilter(request, response);
                 return;
             }
-            else{
-                logger.info("URI -> "+requestURI);
-            }
-            String jwt=getJWTFromRequest(request);
-            logger.info("jwt token is {}", jwt);
-
-
-            if(StringUtils.hasText(jwt) &&  tokenProvider.validateToken(jwt)) {
-                UUID userId = tokenProvider.getUserIdFromJWT(jwt);
-                Optional<User> user=userRepository.findById(userId);
-
-                if(user.isPresent()) {
-                    UserDetails userDetails = UserPrincipal.create(user.get());
-
-                    UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                    authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            String jwt = getJWTFromRequest(request);
+            if (StringUtils.hasText(jwt) ) {
+                Claims claims=tokenProvider.validateandExtractToken(jwt);
+                UUID userId = UUID.fromString(claims.getSubject());
+                String email = claims.get("email", String.class);
+                if(StringUtils.hasText(email)) {
+                    UserDetails userDetails = UserPrincipal.create(userId, email);
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
                 else{
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.setContentType("application/json");
-                    response.getWriter().write("User Not Found Using JWT Token");
-//                    throw new RuntimeException("User Not Found Using JWT Token");
+                    throw new UnAuthorizedException("Not Authorized");
                 }
-            }
-            else{
-                logger.error("Error with validating the token");
+            } else {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");
-                response.getWriter().write(" Error: Sorry either token is null or has expired");
-//                throw new RuntimeException("Sorry Something wrong with the token");
+                response.getWriter().write("{\"error\": \"Token missing or expired\"}");
+                return;
             }
             filterChain.doFilter(request, response);
-        }
-        catch(Exception e){
+        } catch (Exception e) {
             logger.error("Could not set user authentication in security context", e);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
+            response.getWriter().write("{\"error\": \"UnAuthorized, try again\"}");
         }
     }
-
 
     private String getJWTFromRequest(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();

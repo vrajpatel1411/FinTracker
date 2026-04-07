@@ -44,13 +44,16 @@ public class UserPrincipal implements OAuth2User , UserDetails{
         return UserPrincipal.create(user);
     }
 
+    public static UserPrincipal create(UUID id, String email) {
+        List<GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+        return new UserPrincipal(id, email, null, true, authorities);
+    }
+
     @Override
     public String toString() {
         return "UserPrincipal{" +
-                "attributes=" + attributes +
-                ", id=" + id +
+                "id=" + id +
                 ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
                 ", authorities=" + authorities +
                 '}';
     }

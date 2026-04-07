@@ -1,19 +1,16 @@
 package org.vrajpatel.userauthservice.utils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
-import org.vrajpatel.userauthservice.model.User;
 
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 
 @Component
 public class RefreshToken {
 
-    private final Logger logger= LoggerFactory.getLogger(RefreshToken.class);
+    private static final int MAX_DEVICES = 3;
+    private static final long REFRESH_TOKEN_TTL_SECONDS = 864000;
 
     private final StringRedisTemplate stringRedisTemplate;
 
@@ -22,10 +19,28 @@ public class RefreshToken {
     }
 
     public void setRefreshToken(String refreshToken, String userEmail) {
-        logger.info("Saving refresh token for " + userEmail);
-        stringRedisTemplate.opsForValue().set("refresh_token : "+refreshToken, userEmail, 864000, TimeUnit.SECONDS);
-        stringRedisTemplate.opsForSet().add("user_email : "+userEmail, refreshToken);
-        stringRedisTemplate.expire("refresh_token : "+refreshToken, 864000, TimeUnit.SECONDS);
-        logger.info("Refresh token saved");
+        String userKey = "user_email : " + userEmail;
+        long now = System.currentTimeMillis();
+        stringRedisTemplate.opsForValue().set("refresh_token : " + refreshToken, userEmail, REFRESH_TOKEN_TTL_SECONDS, TimeUnit.SECONDS);
+        stringRedisTemplate.opsForZSet().add(userKey, refreshToken, now);
+        stringRedisTemplate.expire(userKey, REFRESH_TOKEN_TTL_SECONDS, TimeUnit.SECONDS);
+        Long size = stringRedisTemplate.opsForZSet().size(userKey);
+        if (size != null && size > MAX_DEVICES) {
+            Set<String> oldest = stringRedisTemplate.opsForZSet().range(userKey, 0, size - MAX_DEVICES - 1);
+            if (oldest != null) {
+                for (String oldToken : oldest) {
+                    stringRedisTemplate.delete("refresh_token : " + oldToken);
+                }
+                stringRedisTemplate.opsForZSet().remove(userKey, oldest.toArray());
+            }
+        }
+    }
+
+    public void deleteRefreshToken(String refreshToken) {
+        String email = stringRedisTemplate.opsForValue().get("refresh_token : " + refreshToken);
+        stringRedisTemplate.delete("refresh_token : " + refreshToken);
+        if (email != null) {
+            stringRedisTemplate.opsForZSet().remove("user_email : " + email, refreshToken);
+        }
     }
 }

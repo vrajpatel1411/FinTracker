@@ -1,18 +1,16 @@
 package org.vrajpatel.userauthservice.utils;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
-import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.stereotype.Service;
 
-
+@Service
 public class SetCookies {
 
     @Value("${domain}")
-    private static String domain;
+    private String domain;
 
-    public static String getAccessCookie(String accessToken) {
+    public String getAccessCookie(String accessToken) {
         ResponseCookie cookie=ResponseCookie.from("accessToken",accessToken)
                 .httpOnly(true)
                 .maxAge(300)
@@ -24,7 +22,7 @@ public class SetCookies {
         return cookie.toString();
     }
 
-    public static String getRefreshToken(String refreshToken) {
+    public String getRefreshToken(String refreshToken) {
         ResponseCookie cookie=ResponseCookie.from("refreshToken",refreshToken)
                 .httpOnly(true)
                 .maxAge(10*24*60*60)
@@ -35,11 +33,31 @@ public class SetCookies {
                 .build();
         return cookie.toString();
     }
-    public static HttpHeaders setCookies(HttpHeaders headers, String accessToken, String refreshToken){
+    public String clearAccessCookie() {
+        return ResponseCookie.from("accessToken", "")
+                .httpOnly(true)
+                .maxAge(0)
+                .sameSite("None")
+                .domain(domain)
+                .secure(true)
+                .path("/")
+                .build().toString();
+    }
 
-        headers.add("Set-Cookie",getAccessCookie(accessToken));
-        headers.add("Set-Cookie",getRefreshToken(refreshToken));
+    public String clearRefreshCookie() {
+        return ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .maxAge(0)
+                .sameSite("None")
+                .domain(domain)
+                .secure(true)
+                .path("/")
+                .build().toString();
+    }
 
+    public HttpHeaders setCookies(HttpHeaders headers, String accessToken, String refreshToken){
+        headers.add("Set-Cookie", getAccessCookie(accessToken));
+        headers.add("Set-Cookie", getRefreshToken(refreshToken));
         return headers;
     }
 }
