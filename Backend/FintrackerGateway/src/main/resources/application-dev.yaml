@@ -1,0 +1,45 @@
+server:
+  port: 8081
+
+eureka:
+  client:
+    enabled: false
+
+logging:
+  level:
+    root: debug
+    org.vrajpatel.fintrackergateway: debug
+    org.vrajpatel.fintrackergateway.Config.AuthConfigGatewayFilter: debug
+
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins:
+                  - https://localhost:5173
+                allowedMethods:
+                  - '*'
+                allowedHeaders:
+                  - '*'
+                exposedHeaders:
+                  - Authorization
+                  - Set-Cookie
+                maxAge: 3600
+                allowCredentials: true
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      CircuitBreaker:
+        register-health-indicator: true
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        minimum-number-of-calls: 5
+
+# OAUTH Routes

@@ -25,7 +25,6 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
     Logger logger = LoggerFactory.getLogger(AuthConfigGatewayFilter.class);
 
     public static class Config{
-
     }
 
     @Value("${domain}")
@@ -38,13 +37,9 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
         super(Config.class);
     }
 
-
     @Override
     public GatewayFilter apply(Config cfg) {
         return (exchange, chain) -> {
-
-            logger.info("Inside AuthConfigGatewayFilter");
-
             String authHeader = null;
             try {
                 if (exchange.getRequest().getCookies().getFirst("accessToken") != null) {
@@ -81,18 +76,19 @@ public class AuthConfigGatewayFilter extends AbstractGatewayFilterFactory<AuthCo
                                                 .header("userEmail", response.getUserEmail())
                                                 .header("userId", response.getUserId())
                                                 .build();
-                                        return chain.filter(exchange.mutate().request(mutatedRequest).build()).then(
-                                                Mono.fromRunnable(() -> exchange.getResponse().addCookie(
-                                                        ResponseCookie.from("accessToken", response.getAccessToken())
-                                                                .httpOnly(true)
-                                                                .secure(true)
-                                                                .path("/")
-                                                                .sameSite("None")
-                                                                .domain(domain)
-                                                                .maxAge(300)
-                                                                .build()
-                                                ))
-                                        );
+                                        return chain.filter(exchange.mutate().request(mutatedRequest).build()).doFinally(signalType-> {
+                                                    exchange.getResponse().addCookie(
+                                                            ResponseCookie.from("accessToken", response.getAccessToken())
+                                                                    .httpOnly(true)
+                                                                    .secure(true)
+                                                                    .path("/")
+                                                                    .sameSite("None")
+                                                                    .domain(domain)
+                                                                    .maxAge(300)
+                                                                    .build()
+                                                    );
+                                                });
+
                                     } else {
                                         return Mono.error(new ResponseStatusException(HttpStatus.FORBIDDEN, "JWT validation failed"));
                                     }

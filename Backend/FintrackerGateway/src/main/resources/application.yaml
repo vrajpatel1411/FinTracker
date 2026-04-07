@@ -1,0 +1,166 @@
+spring:
+  application:
+    name: xpensifyxgateway
+  main:
+    banner-mode: off
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            # Route 0: Personal Expense API (custom filter)
+            - id: personalexpense-api
+              uri: ${PERSONAL_SERVICE_URL}
+              predicates:
+                - name: Path
+                  args:
+                    pattern: /personal/**
+              filters:
+                - AuthConfigGatewayFilter
+
+            # Route 1: User Auth OAuth2
+            - id: userauthservice-oauth
+              uri: ${USER_AUTH_SERVICE}
+              predicates:
+                - name: Path
+                  args:
+                    pattern: /oauth2/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: CircuitBreaker
+                    fallbackUri: forward:/fallback
+
+            # Route 2: User Auth API
+            - id: userauthservice-api
+              uri: ${USER_AUTH_SERVICE}
+              predicates:
+                - name: Path
+                  args:
+                    pattern: /userauth/api/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: CircuitBreaker
+                    fallbackUri: forward:/fallback
+
+            # Route 3: User Auth Swagger UI (assets + UI)
+            - id: userauthservice-swagger
+              uri: ${USER_AUTH_SERVICE}
+              predicates:
+                - name: Path
+                  args:
+                    pattern: /swagger/user/api/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: CircuitBreaker
+                    fallbackUri: forward:/fallback
+                - StripPrefix=1
+
+            # Route 4: User Auth OpenAPI Swagger UI Assets (redirect target)
+            - id: userauthservice-assets
+              uri: ${USER_AUTH_SERVICE}
+              predicates:
+                - name: Path
+                  args:
+                    pattern: /user/api/swagger-ui/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: CircuitBreaker
+                    fallbackUri: forward:/fallback
+
+            # Route 5: User Auth Actuator
+            - id: userauthservice-actuator
+              uri: ${USER_AUTH_SERVICE}
+              predicates:
+                - name: Path
+                  args:
+                    pattern: /userauth/actuator/**
+              filters:
+                - StripPrefix=1
+
+            # Route 6: Personal Service Actuator
+            - id: personalservice-actuator
+              uri: ${PERSONAL_SERVICE_URL}
+              predicates:
+                - name: Path
+                  args:
+                    pattern: /personalservice/actuator/**
+              filters:
+                - StripPrefix=1
+
+            # Route 7: Personal Service OpenAPI exposed under /swagger/...
+            - id: personalservice-swagger
+              uri: ${PERSONAL_SERVICE_URL}
+              predicates:
+                - name: Path
+                  args:
+                    pattern: /swagger/personalexpense/api/**
+              filters:
+                - StripPrefix=1
+
+            # Route 8: Personal Service Swagger UI assets (redirect target)
+            - id: personalservice-swagger-assets
+              uri: ${PERSONAL_SERVICE_URL}
+              predicates:
+                - Path=/personalexpense/api/swagger-ui/**
+
+            # Route 9: Personal Service OpenAPI direct path (swagger-config, etc.)
+            - id: personalservice-openapi-direct
+              uri: ${PERSONAL_SERVICE_URL}
+              predicates:
+                - Path=/personalexpense/api/api-docs/**
+
+            # Route 10: User Auth OpenAPI Direct Path
+            - id: userauthservice-openapi-direct
+              uri: ${USER_AUTH_SERVICE}
+              predicates:
+                - name: Path
+                  args:
+                    pattern: /user/api/api-docs/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: CircuitBreaker
+                    fallbackUri: forward:/fallback
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    urls:
+      - name: Personal Expense Service
+        url: /swagger/personalexpense/api/api-docs
+      - name: Auth Service
+        url: /swagger/user/api/api-docs
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+
+domain: ${DOMAIN}
+validationUrl: ${VALIDATION_URL}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      access: unrestricted
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+otel:
+  exporter:
+    otlp:
+      endpoint: http://jaeger:4317
+      protocol: grpc
+  traces:
+    sampler: always_on
+  propagators: tracecontext,baggage
