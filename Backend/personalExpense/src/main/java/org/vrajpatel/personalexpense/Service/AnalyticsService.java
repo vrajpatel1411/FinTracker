@@ -33,7 +33,7 @@ public class AnalyticsService {
     }
 
 
-    @Cacheable(value="analytics", key="#userId + '_' + #todayDate")
+    @Cacheable(value="analytics", key="#userId")
     public AnalyticsDTO generateAnalytics(String userEmail, String userId, LocalDate todayDate) throws UserNotFoundError {
         if(userId == null || userId.isEmpty()) {
             throw new UserNotFoundError("User Id or User Email is empty");
