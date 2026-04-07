@@ -6,7 +6,7 @@ const RedirectRoute = () => {
     const navigate = useNavigate()
     useEffect(()=>{
         void navigate('/register')
-    },)
+    },[navigate])
 
   return (
     <div>Redirecting to Register Page ... </div>

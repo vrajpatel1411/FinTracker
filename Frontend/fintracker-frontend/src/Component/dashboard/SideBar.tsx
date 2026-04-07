@@ -15,7 +15,7 @@ const menuItems:MenuItem[]  = [
 ]
 const SideBar = () => {
   return (
-    <div className='m-5 h-screen'>
+    <div className='m-5 hidden lg:block'>
       {
         menuItems.map((item, index) => (
           <div key={index} className="flex items-center justify-start text-lg my-1 px-6 py-2 text-zinc-100 hover:bg-zinc-800 hover:opacity-90  hover:rounded-lg cursor-pointer ">

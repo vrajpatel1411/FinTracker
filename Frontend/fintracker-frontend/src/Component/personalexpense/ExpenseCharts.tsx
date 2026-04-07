@@ -1,5 +1,5 @@
 // ExpenseCharts.tsx
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   ResponsiveContainer,
   PieChart,
@@ -91,18 +91,22 @@ interface ExpenseChartsProps {
 }
 
 const ExpenseCharts: React.FC<ExpenseChartsProps> = ({ isLoading,categories, dailyExpenses }) => {
+  const LineChartData = useMemo(() =>
+    (dailyExpenses ?? []).map(({ date, amount }) => {
+        const [_year, month, day] = date.split('-');
+        return { date: `${day}/${month}`, value: amount };
+    }),
+    [dailyExpenses]);
+
+  const pieData = useMemo(() =>
+    (categories ?? []).map((c, index) => ({
+        name: c.name,
+        value: c.value,
+        fill: data[index % data.length],
+    })),
+    [categories]);
+
   if (isLoading) return <ChartsSkeleton />;
-
-  const LineChartData = (dailyExpenses ?? []).map(({ date, amount }) => {
-  const [_year, month, day] = date.split('-');
-  return { date: `${day}/${month}`, value: amount };
-});
-
-const pieData = (categories ?? []).map((c, index) => ({
-  name: c.name,
-  value: c.value,
-  fill: data[index % data.length],
-}));
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4">

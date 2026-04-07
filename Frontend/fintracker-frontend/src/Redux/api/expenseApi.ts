@@ -13,13 +13,13 @@ export const expenseApi = createApi({
     endpoints:(builder)=>({
         getCategories: builder.query<CategoryType[],void>({
             query: () => "/category/",
+            transformResponse: (response: { data: CategoryType[]; status: string }) => response.data,
             providesTags: ["Categories"],
         }),
         getAnalytics: builder.query<AnalyticsType, string>({
             query: (date) => `/analytics?date=${date}`,
             providesTags: ["Analytics"],    
         }),
-
         getExpenses: builder.query<PersonalExpenseData, { page: number; size: number }>({
             query: ({ page, size }) => {
                 const safePage = Math.max(0, page);

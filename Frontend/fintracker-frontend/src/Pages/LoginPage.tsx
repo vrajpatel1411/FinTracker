@@ -4,7 +4,8 @@ import { ValidateEmail, ValidatePassword } from '../Utils/ValidateInputs';
 
 import { useNavigate, useSearchParams } from 'react-router';
 import Modal from '../Utils/Modal';
-import UserLogin from '../Types/UserLogin';
+
+import { UserLogin } from '../Types/auth';
 import loginUser  from '../Redux/Reducers/loginUser';
 import { useSelector } from 'react-redux';
 import { RootState } from '../Redux/Store';
@@ -52,7 +53,7 @@ const LoginUser = () => {
             .unwrap()
             .then(() => navigate("/personal"))
             .catch(() => {
-              // do nothing — stay on login
+
             });
         }
       }, [error,dispatch, navigate,oauthError]);
@@ -79,7 +80,6 @@ const LoginUser = () => {
       }
       const data = new FormData(event.currentTarget);
       const user:UserLogin =   {
-            
               email: data.get('email') as string,
               password: data.get('password') as string,
             };
@@ -88,7 +88,9 @@ const LoginUser = () => {
       .unwrap()
       .then((res) => {
             if(res.status === false && res.needEmailVerification){
-                localStorage.setItem("userEmail", res?.email);
+                if(res.email){
+                 localStorage.setItem("userEmail", res.email);
+                }
                 void navigate("/verify-email");
               }
               else if (res.status === true) {

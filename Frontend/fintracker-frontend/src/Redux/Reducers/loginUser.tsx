@@ -1,5 +1,5 @@
 import { createAsyncThunk} from "@reduxjs/toolkit";
-import UserLogin from "../../Types/UserLogin";
+import { UserLogin } from "../../Types/auth";
 import axios from "axios";
 import { AuthApiResponse } from "../../Types/auth";
 

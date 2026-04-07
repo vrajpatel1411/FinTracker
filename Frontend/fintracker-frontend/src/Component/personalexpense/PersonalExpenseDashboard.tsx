@@ -1,7 +1,7 @@
-import { lazy, Suspense} from 'react';
+import { lazy, Suspense, useMemo} from 'react';
 
 import { ExpenseRowsSkeleton } from './DashboardCardSkeleton';
-import { categoriesType, dailyExpensesType } from '../../Types/AnalyticsType';
+import { categoriesType} from '../../Types/AnalyticsType';
 import { useGetAnalyticsQuery } from '../../Redux/api/expenseApi';
 
 const ExpenseList = lazy(() => import('./ExpenseList'));
@@ -40,22 +40,25 @@ function ExpenseListFallback() {
   );
 }
 
+const today = new Date().toISOString().split('T')[0];
+
 const PersonalExpenseDashboard = () => {
-  const today = new Date().toISOString().split('T')[0];
+  
   const {data:analyticsData, isLoading} = useGetAnalyticsQuery(today);
   
   const todaySpending = analyticsData?.expenseSummary.todayExpense ?? 0;
   const monthlySpending = analyticsData?.expenseSummary.monthlyExpense ?? 0;
   const transactionCount = analyticsData?.expenseSummary.totalTransactions ?? 0;
+  const dailyExpenses = useMemo(() => analyticsData
+    ? Object.entries(analyticsData.dailyExpenseDTO?.dailyExpense ?? {})
+        .map(([date, amount]) => ({ date, amount }))
+    : null,
+    [analyticsData]);
 
-  const dailyExpenses: dailyExpensesType[] | null = analyticsData
-      ? Object.entries(analyticsData.dailyExpenseDTO?.dailyExpense ?? {})
-          .map(([date, amount]) => ({ date, amount }))
-      : null;
-
-  const categoriesArray: categoriesType[] = Object.entries(
-      analyticsData?.categoriesDTO?.categories ?? {}
-  ).map(([name, value]) => ({ name, value }));
+  const categoriesArray = useMemo(() =>
+    Object.entries(analyticsData?.categoriesDTO?.categories ?? {})
+        .map(([name, value]) => ({ name, value })),
+    [analyticsData]);
 
   const category: categoriesType | null = categoriesArray[0] ?? null;
 

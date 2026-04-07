@@ -107,7 +107,7 @@ const RegisterUser = () => {
               void navigate("/verify-email");
             }
             else if (res.status === true) {
-              void navigate("/home");
+              void navigate("/personal");
             }
             })
           .catch((err: AxiosError) => {

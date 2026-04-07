@@ -45,6 +45,16 @@ const INITIAL_FORM: FormState = {
   deleteReceipt: false,
 };
 
+interface FormErrors {
+  title?: string;
+  amount?: string;
+  categoryId?: string;
+  date?: string;
+  receipt?: string;
+}
+
+
+
 const overlayVariants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1 },
@@ -169,6 +179,25 @@ function ReceiptUploader({
   );
 }
 
+const validateForm = (form: FormState): FormErrors => {
+  const errors: FormErrors = {};
+  if (!form.title.trim()) errors.title = "Title is required";
+  if(!form.amount || form.amount <= 0) errors.amount = "Amount must be greater than 0";
+  if (!form.categoryId) errors.categoryId = "Please select a category";
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+   if (!form.date) {
+    errors.date = "Date is required";
+  } else if (!dateRegex.test(form.date)) {
+    errors.date = "Invalid date format (use YYYY-MM-DD)";
+  } else if (isNaN(new Date(form.date).getTime())) {
+    errors.date = "Please enter a valid date";
+  }
+  if(form.hasReceipt && (!form.receipt || form.receipt.size === 0)) {
+    errors.receipt = "Please upload a receipt file";
+  }
+  return errors;
+};
+
 export default function AddExpense({
   open,
   onClose,
@@ -179,13 +208,20 @@ export default function AddExpense({
   onExitEdit,
   expense,
 }: AddExpenseProps) {
+  
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const titleRef = useRef<HTMLInputElement>(null);
   const [addExpenseMutation] = useAddExpenseMutation();
   const [editExpenseMutation] = useEditExpenseMutation();
 
-  const isValid = Boolean(form.amount !== 0 && form.categoryId && form.title);
-
+  const isValid = Boolean(
+                    form.amount > 0 &&
+                    form.categoryId &&
+                    form.title.trim() &&
+                    /^\d{4}-\d{2}-\d{2}$/.test(form.date) &&
+                    !isNaN(new Date(form.date).getTime())
+                  );
   const patch = useCallback(
     (update: Partial<FormState>) => setForm((prev) => ({ ...prev, ...update })),
     []
@@ -193,6 +229,7 @@ export default function AddExpense({
 
   const reset = useCallback(() => {
     setForm({ ...INITIAL_FORM, date: defaultDate ?? today() });
+    setFormErrors({});
     onExitEdit?.();
     onClose();
   }, [defaultDate, onClose, onExitEdit]);
@@ -246,6 +283,13 @@ export default function AddExpense({
   // ── Submit ──
 
   const submit = () => {
+    const validationErrors = validateForm(form);
+    if (Object.keys(validationErrors).length > 0) {
+      setFormErrors(validationErrors);
+      return;
+    }
+    setFormErrors({});
+
     if (!isValid) return;
 
     const payload: AddExpensePayload = {
@@ -318,9 +362,13 @@ export default function AddExpense({
                 <TextInput
                   inputRef={titleRef}
                   value={form.title}
-                  onChange={(e) => patch({ title: e.target.value })}
+                  onChange={(e) => {
+                              patch({ title: e.target.value })
+                              setFormErrors((prev)=>({...prev, title: undefined}))
+                            }}
                   placeholder="e.g., Lunch at Subway"
                 />
+                {formErrors.title && <p className="mt-1 text-xs text-red-400">{formErrors.title}</p>}
               </div>
 
               {/* Amount + Date */}
@@ -331,17 +379,25 @@ export default function AddExpense({
                     type="number"
                     inputMode="decimal"
                     value={String(form.amount)}
-                    onChange={(e) => patch({ amount: e.target.valueAsNumber || 0 })}
+                    onChange={(e) => {
+                      patch({ amount: e.target.valueAsNumber || 0 });
+                      setFormErrors((prev) => ({ ...prev, amount: undefined }));
+                    }}
                     placeholder="0.00"
                   />
+                  {formErrors.amount && <p className="mt-1 text-xs text-red-400">{formErrors.amount}</p>}
                 </div>
                 <div>
                   <FieldLabel>Date</FieldLabel>
                   <TextInput
                     type="date"
                     value={form.date}
-                    onChange={(e) => patch({ date: e.target.value.replace(/"/g, "") })}
+                    onChange={(e) => {
+                      patch({ date: e.target.value.replace(/"/g, "") });
+                      setFormErrors((prev) => ({ ...prev, date: undefined }));
+                    }}
                   />
+                  {formErrors.date && <p className="mt-1 text-xs text-red-400">{formErrors.date}</p>}
                 </div>
               </div>
 
@@ -353,7 +409,10 @@ export default function AddExpense({
                     <button
                       key={c.categoryId}
                       type="button"
-                      onClick={() => patch({ categoryId: c.categoryId })}
+                      onClick={() => {
+                        patch({ categoryId: c.categoryId })
+                        setFormErrors((prev) => ({ ...prev, categoryId: undefined }));
+                      }}
                       aria-pressed={form.categoryId === c.categoryId}
                       className={cn(
                         "flex flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-sm transition-colors w-full focus:outline-none overflow-hidden",
@@ -370,6 +429,7 @@ export default function AddExpense({
                     </button>
                   ))}
                 </div>
+                {formErrors.categoryId && <p className="mt-1 text-xs text-red-400">{formErrors.categoryId}</p>}
               </div>
 
               {/* Notes */}
@@ -392,9 +452,7 @@ export default function AddExpense({
                     const checked = e.target.checked;
                     patch({
                       hasReceipt: checked,
-                      // If unchecking in edit mode and there was an existing receipt → flag for deletion
                       deleteReceipt: !checked && isEdit && expense?.receiptId !== null,
-                      // Clear preview if unchecking
                       ...(!checked ? { receipt: null, receiptPreview: "" } : {}),
                     });
                   }}
@@ -404,12 +462,17 @@ export default function AddExpense({
 
               {/* Receipt uploader */}
               {form.hasReceipt && (
-                <ReceiptUploader
+                <>                <ReceiptUploader
                   receipt={form.receipt}
                   receiptPreview={form.receiptPreview}
                   onChange={handleReceiptFile}
                   onRemove={() => patch({ receipt: null, receiptPreview: "" })}
                 />
+                {formErrors.receipt && (
+                  <p className="mt-1 text-xs text-red-400">{formErrors.receipt}</p>
+                )
+                }
+                </>
               )}
 
               {/* Actions */}

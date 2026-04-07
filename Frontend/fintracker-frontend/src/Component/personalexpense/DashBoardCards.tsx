@@ -80,7 +80,7 @@ const DashBoardCards: React.FC<DashBoardCardsProps> = ({ isLoading,category,tota
         {DashBoardCardItems.map((item, index) => (
           <div
             key={index}
-            className="group flex flex-col gap-1.5 rounded-xl p-5 bg-[#17171c] border border-zinc-700/50
+            className="group flex flex-col gap-1.5 rounded-xl p-3 sm:p-5 bg-[#17171c] border border-zinc-700/50
                        hover:border-zinc-500/80 hover:bg-[#1d1d24] transition-all duration-200 w-full"
           >
             {/* Title */}
@@ -98,7 +98,7 @@ const DashBoardCards: React.FC<DashBoardCardsProps> = ({ isLoading,category,tota
               {item.currency && (
                 <span className="text-sm font-medium text-zinc-400">{item.currency}</span>
               )}
-              <span className="text-2xl font-bold tracking-tight text-white">
+              <span className="text-xl sm:text-2xl font-bold tracking-tight text-white">
                 {item?.amount?.toLocaleString()}
               </span>
             </div>
