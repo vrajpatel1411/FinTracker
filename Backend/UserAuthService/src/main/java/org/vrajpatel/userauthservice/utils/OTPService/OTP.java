@@ -9,8 +9,6 @@ import java.security.SecureRandom;
 public class OTP {
 
 
-    private final int len=6;
-
     private final SecureRandom secureRandom;
 
     OTP(){

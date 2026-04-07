@@ -1,17 +1,12 @@
 package org.vrajpatel.userauthservice.utils.Oauth2Handler;
 
-import jakarta.persistence.Column;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
-
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -33,35 +28,29 @@ import static org.vrajpatel.userauthservice.utils.HttpCookieOauth2.REDIRECT_URI_
 @Component
 public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
-    @Autowired
-    private TokenProvider tokenProvider;
+    private final TokenProvider tokenProvider;
+    private final AppProperties appProperties;
+    private final RefreshToken refreshTokenUtil;
+    private final HttpCookieOauth2 cookieOauth2;
+    private final SetCookies setCookies;
+    private final AuthService authService;
 
-    @Autowired
-    private AppProperties appProperties;
-
-    @Autowired
-    private RefreshToken refreshTokenUtil;
-
-
-    @Autowired
-    private HttpCookieOauth2 cookieOauth2;
-
-    @Autowired
-    private OTP otpService;
-
-    @Autowired
-    private EmailService emailService;
-
-    @Autowired
-    private StringRedisTemplate stringRedisTemplate;
-
-    @Value("${domain}")
-    private String domain;
-
+    public Oauth2SuccessHandler(TokenProvider tokenProvider,
+                                AppProperties appProperties,
+                                RefreshToken refreshTokenUtil,
+                                HttpCookieOauth2 cookieOauth2,
+                                SetCookies setCookies, AuthService authService) {
+        this.tokenProvider = tokenProvider;
+        this.appProperties = appProperties;
+        this.refreshTokenUtil = refreshTokenUtil;
+        this.cookieOauth2 = cookieOauth2;
+        this.setCookies = setCookies;
+        this.authService = authService;
+    }
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-        String targetUrl= determineTargetUrl(request, response,authentication);
+        String targetUrl = determineTargetUrl(request, response, authentication);
 
         if (response.isCommitted()) {
             logger.debug("Response has already been committed. Unable to redirect to " + targetUrl);
@@ -70,75 +59,53 @@ public class Oauth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
 
-        if(userPrincipal.isEmailVerified()){
-            String accessToken=null;
-            String refreshToken=null;
-            if(!targetUrl.isEmpty()){
-                accessToken= tokenProvider.createJWT('A',(UserPrincipal) authentication.getPrincipal());
-                refreshToken=tokenProvider.createJWT('R',(UserPrincipal) authentication.getPrincipal());
-            }
-
-            if(accessToken!=null && refreshToken!=null){
-                response.addHeader(HttpHeaders.SET_COOKIE,SetCookies.getAccessCookie(accessToken));
-                response.addHeader(HttpHeaders.SET_COOKIE,SetCookies.getRefreshToken(refreshToken));
-            }
+        if (userPrincipal.isEmailVerified()) {
+            String accessToken = tokenProvider.generateAccessToken(userPrincipal.getId(), userPrincipal.getEmail());
+            String refreshToken = tokenProvider.generateRefreshToken(userPrincipal.getId(), userPrincipal.getEmail());
+            response.addHeader(HttpHeaders.SET_COOKIE, setCookies.getAccessCookie(accessToken));
+            response.addHeader(HttpHeaders.SET_COOKIE, setCookies.getRefreshToken(refreshToken));
             refreshTokenUtil.setRefreshToken(refreshToken, userPrincipal.getEmail());
-            UriComponentsBuilder builder = UriComponentsBuilder
-                    .fromUriString(targetUrl)
-                    .queryParam("status", true);
-            targetUrl = builder.toUriString();
-        }
-        else {
-            String otp= otpService.generateOTP();
+            targetUrl = UriComponentsBuilder.fromUriString(targetUrl)
+                    .queryParam("status", true)
+                    .toUriString();
+        } else {
             try {
-                emailService.sendEmail(userPrincipal.getEmail(), "OTP Verification", "Your OTP is: " + otp);
+                authService.sendOTP(userPrincipal.getEmail());
             } catch (Exception e) {
-                throw new BadRequestException(e.getMessage());
+                logger.error("Issue while Sending OTP : "+ e.getMessage());
+                throw new BadRequestException("Issue while sending OTP to " + userPrincipal.getEmail());
             }
-            stringRedisTemplate.opsForValue().set("OTP:"+userPrincipal.getEmail().toLowerCase(), otp, 120, TimeUnit.SECONDS);
-            UriComponentsBuilder builder = UriComponentsBuilder
-                    .fromUriString(targetUrl)
+            targetUrl = UriComponentsBuilder.fromUriString(targetUrl)
                     .queryParam("email", userPrincipal.getEmail())
-                    .queryParam("status", false);
-            targetUrl = builder.toUriString();
+                    .queryParam("status", false)
+                    .toUriString();
         }
-
-        clearAuthenticationAttributes(request);
-
+        clearAuthenticationAttributes(request, response);
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
-
     }
+
     protected final void clearAuthenticationAttributes(HttpServletRequest request, HttpServletResponse response) {
         super.clearAuthenticationAttributes(request);
         cookieOauth2.removeAuthorizationRequest(request, response);
     }
-    protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response,  Authentication authentication) {
-        Optional<String> redirectUri= CookiesUtil.getCookie(request,REDIRECT_URI_PARAM_COOKIE_NAME).map(Cookie::getValue);
 
-        if(redirectUri.isPresent() && !isAuthorizedRedirectURI(redirectUri.get())){
+    protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+        Optional<String> redirectUri = CookiesUtil.getCookie(request, REDIRECT_URI_PARAM_COOKIE_NAME).map(Cookie::getValue);
+        if (redirectUri.isPresent() && !isAuthorizedRedirectURI(redirectUri.get())) {
             throw new BadRequestException("Sorry, We've got an unauthorized redirect URI");
         }
-        String targetUrl=redirectUri.orElse(getDefaultTargetUrl());
+        String targetUrl = redirectUri.orElse(getDefaultTargetUrl());
         return UriComponentsBuilder.fromUriString(targetUrl).build().toUriString();
     }
 
-    private boolean isAuthorizedRedirectURI(String uri){
-        URI clientRedirectUri=URI.create(uri);
-
-        return appProperties
-                .getOauth2()
-                .getAuthorizedRedirectUris()
-                .stream()
-                .anyMatch(
-                        isAuthorizedRedirectURI->
-                        {
-                            URI authorizedUri=URI.create(isAuthorizedRedirectURI);
-                            if(authorizedUri.getHost().equalsIgnoreCase(clientRedirectUri.getHost())  && authorizedUri.getPort()== clientRedirectUri.getPort()){
-
-                                return true;
-                            }
-                            return false;
-                        }
-                );
+    private boolean isAuthorizedRedirectURI(String uri) {
+        URI clientRedirectUri = URI.create(uri);
+        return appProperties.getOauth2().getAuthorizedRedirectUris().stream()
+                .anyMatch(authorizedRedirectUri -> {
+                    URI authorizedUri = URI.create(authorizedRedirectUri);
+                    return authorizedUri.getScheme().equalsIgnoreCase(clientRedirectUri.getScheme())
+                            && authorizedUri.getHost().equalsIgnoreCase(clientRedirectUri.getHost())
+                            && authorizedUri.getPort() == clientRedirectUri.getPort();
+                });
     }
 }

@@ -1,16 +1,12 @@
 package org.vrajpatel.userauthservice.service;
 
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+
 import org.springframework.stereotype.Service;
 import org.vrajpatel.userauthservice.Exception.AuthenticationServiceException.UserNotFound;
 import org.vrajpatel.userauthservice.Repository.UserRepository;
-import org.vrajpatel.userauthservice.ResponseDTO.LoginResponseDTO;
 import org.vrajpatel.userauthservice.ResponseDTO.UserResponse;
 import org.vrajpatel.userauthservice.model.User;
-import org.vrajpatel.userauthservice.requestDTO.OtpDto;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -18,7 +14,7 @@ import java.util.UUID;
 @Service
 public class UserService {
 
-    public final UserRepository userRepository;
+    private final UserRepository userRepository;
 
     @Autowired
     public UserService(UserRepository userRepository) {
@@ -26,28 +22,22 @@ public class UserService {
     }
 
     public User findUserById(UUID id) throws UserNotFound {
-        Optional<User> user=userRepository.findById(id);
-        if(user.isPresent()){
-            return user.get();
-        }
-        throw new UserNotFound("User not found with id: "+id );
+        return userRepository.findById(id).orElseThrow(() -> new UserNotFound("User not found: " + id));
     }
 
-    public ResponseEntity<UserResponse> findUserByEmail(String email) {
+    public UserResponse findUserByEmail(String email) {
         Optional<User> user = userRepository.findByEmail(email);
+        UserResponse userResponse = new UserResponse();
         if(user.isPresent()) {
-            UserResponse userResponse = new UserResponse();
             userResponse.setUser(user.get());
             userResponse.setMessage("Successfully found user");
             userResponse.setStatus(true);
-            return new ResponseEntity<>(userResponse, HttpStatus.OK);
         }
         else{
-            UserResponse userResponse = new UserResponse();
             userResponse.setMessage("User not found");
             userResponse.setStatus(false);
-            return new ResponseEntity<>(userResponse,HttpStatus.NOT_FOUND);
         }
+        return userResponse;
     }
 
 

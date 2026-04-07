@@ -7,12 +7,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.vrajpatel.userauthservice.Exception.BadRequestException;
-
-import org.vrajpatel.userauthservice.utils.UserPrincipal;
 import org.vrajpatel.userauthservice.utils.config.AppProperties;
 
+import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.security.Key;
 import java.util.Date;
 import java.util.UUID;
 
@@ -21,71 +19,83 @@ public class TokenProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(TokenProvider.class);
     private final AppProperties appProperties;
-    private final Key accesskey;
-    private final Key refreshKey;
+    private final SecretKey accessKey;
+    private final SecretKey refreshKey;
 
     public TokenProvider(AppProperties appProperties) {
         this.appProperties = appProperties;
-
-        // Convert the secret key string to a proper Key object using UTF-8 encoding
-        this.accesskey = Keys.hmacShaKeyFor(appProperties.getAuth().getAccessTokenSecret().getBytes(StandardCharsets.UTF_8));
-        this.refreshKey=Keys.hmacShaKeyFor(appProperties.getAuth().getRefreshTokenSecret().getBytes(StandardCharsets.UTF_8));
+        this.accessKey = Keys.hmacShaKeyFor(appProperties.getAuth().getAccessTokenSecret().getBytes(StandardCharsets.UTF_8));
+        this.refreshKey = Keys.hmacShaKeyFor(appProperties.getAuth().getRefreshTokenSecret().getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(char tokenType,String userId) {
+    public String generateAccessToken(UUID userId, String email) {
+        return buildToken(userId, email, appProperties.getAuth().getAccessTokenExpirationMsec(), accessKey);
+    }
+
+    public String generateRefreshToken(UUID userId, String email) {
+        return buildToken(userId, email, appProperties.getAuth().getRefreshTokenExpirationMsec(), refreshKey);
+    }
+
+    private String buildToken(UUID userId, String email, long expirationMsec, SecretKey key) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + ((tokenType == 'A')?appProperties.getAuth().getAccessTokenExpirationMsec():appProperties.getAuth().getRefreshTokenExpirationMsec()));
-//        logger.warn("Expiry date: {}", expiryDate);
+        Date expiryDate = new Date(now.getTime() + expirationMsec);
         return Jwts.builder()
-                .setSubject(userId)
-                .claim("id", userId)
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(((tokenType == 'A' ? accesskey : refreshKey)), SignatureAlgorithm.HS256) // 🔐 No deprecation warning
+                .subject(userId.toString())
+                .claims().add("userId", userId).add("email", email).and()
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(key)
                 .compact();
     }
 
-    public String createJWT(char tokenType,UserPrincipal user) {
-
-        if (user == null) {
-            return null;
-        }
-
-       return generateToken(tokenType,user.getId().toString());
-    }
-
     public UUID getUserIdFromJWT(String jwt) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(accesskey) // ✅ Use cached Key object
-                .build()
-                .parseClaimsJws(jwt)
-                .getBody();
-
-        return UUID.fromString(claims.getSubject());
+        return UUID.fromString(parseClaims(jwt, accessKey).getSubject());
     }
+
+    public String getEmailFromJWT(String jwt) {
+        return parseClaims(jwt,accessKey).get("email", String.class);
+    }
+
+    public UUID getUserIdfromRefreshToken(String refreshToken) {
+        return UUID.fromString(parseClaims(refreshToken,refreshKey).getSubject());
+    }
+
+    public String getEmailFromRefreshToken(String refreshToken) {
+        return parseClaims(refreshToken,refreshKey).get("email", String.class);
+    }
+
+    private Claims parseClaims(String jwt,SecretKey key ) {
+        return Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(jwt)
+                .getPayload();
+    }
+
 
     public boolean validateRefreshToken(String refreshToken) {
-        Jwts.parserBuilder().setSigningKey(refreshKey).build().parseClaimsJws(refreshToken);
-        return true;
+        try {
+            Jwts.parser().verifyWith(refreshKey).build().parseSignedClaims(refreshToken);
+            return true;
+        } catch (ExpiredJwtException ex) {
+            logger.error("Refresh token expired");
+        } catch (JwtException ex) {
+            logger.error("Invalid refresh token: {}", ex.getMessage());
+        }
+        return false;
     }
 
-    public boolean validateToken(String authToken) {
+    public Claims validateandExtractToken(String authToken) {
         try {
-            Jwts.parserBuilder().setSigningKey(accesskey).build().parseClaimsJws(authToken);
-
+            return Jwts.parser().verifyWith(accessKey).build().parseSignedClaims(authToken).getPayload();
         } catch (SignatureException ex) {
-            logger.error("Invalid JWT signature");
             throw new BadRequestException("Invalid JWT signature");
         } catch (MalformedJwtException ex) {
-            logger.error("Invalid JWT token");
             throw new BadRequestException("Invalid JWT token");
         } catch (UnsupportedJwtException ex) {
-            logger.error("Unsupported JWT token");
             throw new BadRequestException("Unsupported JWT token");
         } catch (IllegalArgumentException ex) {
-            logger.error("JWT claims string is empty");
             throw new BadRequestException("JWT claims string is empty");
         }
-        return true;
     }
 }

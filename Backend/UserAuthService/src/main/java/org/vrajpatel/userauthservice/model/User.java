@@ -5,17 +5,17 @@ import jakarta.validation.constraints.Email;
 import lombok.*;
 import jakarta.validation.constraints.NotNull;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name="users")
+@Table(name = "users")
 @Data
-@Getter @Setter @NoArgsConstructor @ToString
+@NoArgsConstructor
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(columnDefinition = "uuid", nullable = false, unique = true)
     private UUID userId;
 
@@ -23,30 +23,25 @@ public class User {
     @Column(name = "first_name")
     private String firstName;
 
-
-
-    @Column(name="avatar_url")
+    @Column(name = "avatar_url")
     private String photoUrl;
 
     @NotNull
-    @Column
+    @Column(unique = true)
     @Email(message = "Email not valid")
     private String email;
 
     @Column
     private String password;
 
-    @Column(name="isemailverified")
+    @Column(name = "isemailverified")
     private boolean isEmailVerified;
-
 
     @Enumerated(EnumType.STRING)
     private AuthProvider authProvider;
 
-
     private String providerId;
 
     @NotNull
-    private Date createdAt;
-
+    private Instant createdAt;
 }

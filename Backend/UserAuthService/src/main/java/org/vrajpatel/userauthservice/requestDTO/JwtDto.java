@@ -2,8 +2,10 @@ package org.vrajpatel.userauthservice.requestDTO;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class JwtDto {
 
     @JsonProperty("jwt")
@@ -15,7 +17,8 @@ public class JwtDto {
     public void setJwt(String jwt) {
         this.jwt = jwt;
     }
-    JwtDto(String jwt) {
+
+    public JwtDto(String jwt) {
         this.jwt = jwt;
     }
 }
