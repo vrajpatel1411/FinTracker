@@ -1,0 +1,261 @@
+pipeline {
+  agent any
+  options { timestamps(); ansiColor('xterm') }
+
+  environment {
+    PROJECT_ID = 'fintracker-466620'
+    REGION     = 'us-central1'
+    CLUSTER    = 'fintracker-cluster'
+    REGISTRY   = "us-central1-docker.pkg.dev/${PROJECT_ID}/fintracker-docker-registry"
+    GOOGLE_APPLICATION_CREDENTIALS = credentials('GCP_SERVICE_ACCOUNT_KEY')
+    SHELL_OPT = 'set -euo pipefail'
+  }
+
+  tools {
+    maven 'maven-3.9.11'
+    dockerTool 'docker'
+  }
+
+  stages {
+
+    stage('Checkout & Metadata') {
+      steps {
+        checkout scm
+        script {
+
+         // get the commit sha
+          env.COMMIT_SHA = sh(script: "git rev-parse --short=12 HEAD", returnStdout: true).trim()
+
+          // Resolve diff base (PR vs branch)
+          def base = sh(script: "git merge-base HEAD HEAD~1 2>/dev/null || echo ''", returnStdout: true).trim()
+          if (!base) { base = sh(script: "git rev-list --max-parents=0 HEAD | tail -n1", returnStdout: true).trim() }
+          env.DIFF_BASE = base
+
+          echo "Commit: ${env.COMMIT_SHA}"
+          echo "Diff base: ${env.DIFF_BASE}"
+
+          env.CHANGED_FILES = sh(script: "git diff --name-only ${env.DIFF_BASE} HEAD || true", returnStdout: true).trim()
+          echo "Changed files:\n${env.CHANGED_FILES}"
+        }
+      }
+    }
+
+    stage('GCP Auth') {
+      steps {
+        sh """
+          ${SHELL_OPT}
+          gcloud auth activate-service-account --key-file="${GOOGLE_APPLICATION_CREDENTIALS}"
+          gcloud config set project "${PROJECT_ID}"
+          gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
+          gcloud container clusters get-credentials "${CLUSTER}" --region "${REGION}"
+          kubectl version --short
+        """
+      }
+    }
+
+    stage('Discover Changed Services') {
+      steps {
+        script {
+          // Map your services: path, image repo, k8s deployment, container name
+          def services = [
+            [
+              key: 'gateway',
+              path: 'Backend/FintrackerGateway',
+              imageRepo: "${REGISTRY}/gateway/fintrackergateway",
+              deployName: 'fintracker-gateway',
+              container: 'gateway',
+              type: 'maven'
+            ],
+            [
+              key: 'auth',
+              path: 'Backend/UserAuthService',
+              imageRepo: "${REGISTRY}/userauthentication/userauthentication",
+              deployName: 'user-authentication',
+              container: 'auth',
+              type: 'maven'
+            ],
+            [
+              key: 'personal',
+              path: 'Backend/personalExpense',
+              imageRepo: "${REGISTRY}/personalexpense/personalexpense",
+              deployName: 'personal-expense',
+              container: 'personal',
+              type: 'maven'
+            ],
+            [
+              key: 'frontend',
+              path: 'Frontend/fintracker-frontend',
+              imageRepo: "${REGISTRY}/frontend/fintrackerfrontend",
+              deployName: 'fintracker-frontend',
+              container: 'frontend',
+              type: 'node'
+            ],
+          ]
+
+          // If shared code changed, rebuild all
+          def sharedDirs = ['Shared/', 'libs/', 'common/'].findAll { dir ->
+            return env.CHANGED_FILES.split('\n')*.trim().any { it.startsWith(dir) }
+          }
+
+          def changed = []
+          for (svc in services) {
+            def touched = env.CHANGED_FILES.split('\n')*.trim().any { it.startsWith(svc.path + '/') }
+            if (touched) { changed << svc }
+          }
+          if (sharedDirs) {
+            echo "Shared code changed: ${sharedDirs.join(', ')} — building all services."
+            changed = services
+          }
+
+          if (changed.isEmpty()) {
+            echo 'No service changes detected; skipping build/deploy.'
+            env.SVCS_JSON = '[]'
+          } else {
+            env.SVCS_JSON = groovy.json.JsonOutput.toJson(changed)
+            echo "Services to build: ${changed*.key}"
+          }
+        }
+      }
+    }
+
+    stage('Build / Test / Scan / Push (parallel)') {
+      when { expression { return env.SVCS_JSON && env.SVCS_JSON != '[]' } }
+      parallel {
+        stage('Per-service') {
+          steps {
+            script {
+              def svcs = new groovy.json.JsonSlurperClassic().parseText(env.SVCS_JSON)
+              def branches = [:]
+              svcs.each { svc ->
+                branches["${svc.key}"] = {
+                  dir(svc.path) {
+                    sh "echo Building ${svc.key} in ${svc.path}"
+
+                    if (svc.type == 'maven') {
+                      sh """
+                        ${SHELL_OPT}
+                        mvn -q -DskipTests=false clean verify
+                      """
+                    } else if (svc.type == 'node') {
+                      sh """
+                        ${SHELL_OPT}
+                        if [ -f package-lock.json ]; then npm ci; else npm install; fi
+                        npm run -s build || true
+                        npm test -- --watchAll=false || true
+                      """
+                    }
+
+                    sh """
+                      ${SHELL_OPT}
+                      IMAGE="${svc.imageRepo}:${env.COMMIT_SHA}"
+                      docker build -t "$IMAGE" .
+                      docker push "$IMAGE"
+                      echo "$IMAGE" > image.txt
+                    """
+
+                    // Image vuln scan (fail on HIGH/CRITICAL)
+                    sh """
+                      ${SHELL_OPT}
+                      IMAGE="$(cat image.txt)"
+                      trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --scanners vuln "$IMAGE" | tee trivy-${svc.key}.txt
+                    """
+                    archiveArtifacts artifacts: "trivy-${svc.key}.txt", fingerprint: true
+                  }
+                }
+              }
+              parallel branches
+            }
+          }
+        }
+      }
+    }
+
+    stage('Patch & Validate Manifests (parallel)') {
+      when { expression { return env.SVCS_JSON && env.SVCS_JSON != '[]' } }
+      steps {
+        script {
+          def svcs = new groovy.json.JsonSlurperClassic().parseText(env.SVCS_JSON)
+          def branches = [:]
+          svcs.each { svc ->
+            branches["patch-${svc.key}"] = {
+              dir(svc.path) {
+                sh """
+                  ${SHELL_OPT}
+                  IMAGE="\$(cat image.txt)"
+                  # Prefer Kustomize/Helm; for now patch via yq:
+                  yq -y '(.spec.template.spec.containers[] | select(.name=="${svc.container}") | .image) = env(IMAGE)' k8s/Deployment.yaml > k8s/Deployment-patched.yaml
+
+                  # Validate schema + server dry-run
+                  kubeconform -strict -ignore-missing-schemas -summary k8s/Deployment-patched.yaml || true
+                  kubectl apply --server-side --dry-run=server -f k8s/service.yaml
+                  test -f k8s/managed-cert.yaml && kubectl apply --server-side --dry-run=server -f k8s/managed-cert.yaml || true
+                  test -f k8s/ingress.yaml && kubectl apply --server-side --dry-run=server -f k8s/ingress.yaml || true
+                  kubectl apply --server-side --dry-run=server -f k8s/Deployment-patched.yaml
+
+                  # Optional diff
+                  kubectl diff -f k8s/Deployment-patched.yaml || true
+                """
+                archiveArtifacts artifacts: 'k8s/Deployment-patched.yaml', fingerprint: true
+              }
+            }
+          }
+          parallel branches
+        }
+      }
+    }
+
+    stage('Deploy (parallel)') {
+      when { expression { return env.SVCS_JSON && env.SVCS_JSON != '[]' } }
+      steps {
+        script {
+          def svcs = new groovy.json.JsonSlurperClassic().parseText(env.SVCS_JSON)
+          def branches = [:]
+          svcs.each { svc ->
+            branches["deploy-${svc.key}"] = {
+              dir(svc.path) {
+                sh """
+                  ${SHELL_OPT}
+                  kubectl apply -f k8s/service.yaml
+                  test -f k8s/managed-cert.yaml && kubectl apply -f k8s/managed-cert.yaml || true
+                  test -f k8s/ingress.yaml && kubectl apply -f k8s/ingress.yaml || true
+                  kubectl apply -f k8s/Deployment-patched.yaml
+
+                  kubectl rollout status deploy/${svc.deployName} -n default --timeout=180s
+                """
+              }
+            }
+          }
+          parallel branches
+        }
+      }
+    }
+
+    stage('Smoke tests (parallel, stub)') {
+      when { expression { return env.SVCS_JSON && env.SVCS_JSON != '[]' } }
+      steps {
+        script {
+          def svcs = new groovy.json.JsonSlurperClassic().parseText(env.SVCS_JSON)
+          def branches = [:]
+          svcs.each { svc ->
+            branches["smoke-${svc.key}"] = {
+              sh """
+                ${SHELL_OPT}
+                echo "TODO: curl your /health for ${svc.key} here"
+              """
+            }
+          }
+          parallel branches
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      archiveArtifacts artifacts: '**/image.txt, **/Deployment-patched.yaml', allowEmptyArchive: true
+      cleanWs()
+    }
+    success { echo '✅ Only changed services were built and deployed successfully.' }
+    failure { echo '❌ Pipeline failed. Check the stage that broke.' }
+  }
+}

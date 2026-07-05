@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gateway-ingress
+  namespace: fintracker
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: fintracker-backend-ip
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    kubernetes.io/ingress.class: "gce"
+    networking.gke.io/managed-certificates: fintracker-backend-cert
+spec:
+  rules:
+    - host: "fintracker.vrajpatelproject.software"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: "gatewaydeployment-service"
+                port:
+                  number: 8080

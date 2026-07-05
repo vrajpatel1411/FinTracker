@@ -1,0 +1,90 @@
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: fintracker-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=7d'
+    networks:
+      - fintracker-net
+
+  jaeger:
+    image: jaegertracing/jaeger:2.0.0
+    container_name: fintracker-jaeger
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./jaeger-config.yml:/etc/jaeger/config.yml
+      - ./jaeger-ui.json:/etc/jaeger/jaeger-ui.json
+    command: ["--config", "/etc/jaeger/config.yml"]
+    networks:
+      - fintracker-net
+  
+  grafana:
+    image: grafana/grafana:latest
+    container_name: fintracker-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER:     admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP:     false
+      GF_PATHS_PROVISIONING:      /etc/grafana/provisioning
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - fintracker-net
+
+  redis:
+    image: "redis/redis-stack-server:latest"
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - fintracker-net
+
+  userauthservice:
+    build:
+      context: C:\Users\vrajp\Desktop\Personal\projects\FinTracker\Backend\UserAuthService
+    container_name: userauthservice
+    env_file:
+      - C:\Users\vrajp\Desktop\Personal\projects\FinTracker\Backend\UserAuthService\prod.env
+    ports:
+      - "8084:8084"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      - redis
+    networks:
+      - fintracker-net
+
+  apigateway:
+    build:
+      context: C:\Users\vrajp\Desktop\Personal\projects\FinTracker\Backend\FintrackerGateway
+    container_name: apigateway
+    env_file:
+      - C:\Users\vrajp\Desktop\Personal\projects\FinTracker\Backend\FintrackerGateway\.env
+    ports:
+      - "8081:8081"
+    depends_on:
+      - userauthservice
+    networks:
+      - fintracker-net
+
+networks:
+  fintracker-net:
+    driver: bridge

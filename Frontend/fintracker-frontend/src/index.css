@@ -1,0 +1,85 @@
+/* Fonts — must be first @import */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap');
+
+@import "tailwindcss";
+
+/* ── Tailwind v4 design tokens ────────────────────────────────────────────────
+   tailwind.config.js is ignored in v4. All tokens must be declared here.
+   --color-*   → bg-*, text-*, border-*, ring-*, fill-*, stroke-*, etc.
+   --font-*    → font-* utility classes
+   --animate-* → animate-* utility classes
+   @keyframes  → defined outside @theme
+   ──────────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  /* ── Brand ──────────────────────────────────────────── */
+  --color-brand:        #009689;
+  --color-brand-dark:   #005a52;
+  --color-brand-glow:   #14b8a6;
+  --color-brand-accent: #563787;
+
+  /* ── Surfaces ───────────────────────────────────────── */
+  --color-surface-page:      #0f0f14;
+  --color-surface-base:      #121215;
+  --color-surface-subtle:    #13131a;
+  --color-surface-card:      #17171c;
+  --color-surface-card-alt:  #1d1d24;
+  --color-surface-card-hover:#1f1f24;
+  --color-surface-tooltip:   #1e1e28;
+  --color-surface-elevated:  #2a2a30;
+  --color-surface-menu-hover:#3d3d45;
+
+  /* ── Foreground ─────────────────────────────────────── */
+  --color-fg-1: #f4f4f5;
+  --color-fg-2: #d4d4d8;
+  --color-fg-3: #a1a1aa;
+  --color-fg-4: #71717a;
+  --color-fg-5: #52525b;
+
+  /* ── Status ─────────────────────────────────────────── */
+  --color-positive:    #34d399;
+  --color-negative:    #f87171;
+  --color-warning:     #F2994A;
+  --color-receipt-yes: #10b981;
+  --color-receipt-no:  #ef4444;
+
+  /* ── Chart palette ──────────────────────────────────── */
+  --color-chart-1: #009689;
+  --color-chart-2: #8b5cf6;
+  --color-chart-3: #f59e0b;
+  --color-chart-4: #3b82f6;
+  --color-chart-5: #ef4444;
+  --color-chart-6: #10b981;
+
+  /* ── Font families ──────────────────────────────────── */
+  --font-sans:    'Inter', system-ui, sans-serif;
+  --font-display: 'Poppins', 'Inter', system-ui, sans-serif;
+  --font-mono:    ui-monospace, SFMono-Regular, monospace;
+
+  /* ── Animation ──────────────────────────────────────── */
+  --animate-shimmer: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*:focus-visible {
+  outline: 2px solid #009689;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Thin custom scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #0f0f14; }
+::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #52525b; }

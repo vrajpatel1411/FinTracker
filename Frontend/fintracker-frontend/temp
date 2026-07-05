@@ -1,0 +1,616 @@
+FinTracker Frontend — Critical Code Review
+
+  ---
+  1. Code Understanding
+
+  Architecture: React 18 + Redux Toolkit + React Router v7 + Material UI + Tailwind CSS v4. It's a SPA with lazy-loaded auth pages,  
+  RTK Query for data fetching, and two distinct UI systems running side by side (MUI for auth, Tailwind for the dashboard).
+
+  State management: Three slices (AuthSlice, PersonalExpenseSlice, CategorySlice) plus RTK Query for server state. The separation is 
+  reasonable, but CategorySlice exists while categories are fetched via RTK Query — the slice is dead weight.
+
+  Data flow: Clean one-way flow: thunks/mutations → Redux → components via selectors. No context, no prop-drilling mess. Good.       
+
+  Assumptions baked into the code:
+  - Users always have localStorage access (OTP timer, email storage)
+  - Currency is always CAD (hardcoded in formatCurrency and currency = "CAD")
+  - A single iconRef is shared across every row in the expense table — this is a bug
+
+  ---
+  2. Code Quality Review
+
+  Critical bugs
+
+  iconRef is shared across all table rows (ExpenseList.tsx:40, 226)
+
+  Every <MoreHorizIcon ref={iconRef} /> in the table points at the same ref. The click-outside detection reads iconRef.current to    
+  decide if the user clicked on "the icon" — but it only ever holds a reference to the last rendered row's icon, making
+  close-on-outside-click unreliable for every row except the last one.
+
+  // Current — one ref shared across N rows
+  const iconRef = useRef<SVGSVGElement | null>(null);
+
+  // Fix: use a data attribute instead of a ref for the icon
+  const toggleMenu = useCallback((e: React.MouseEvent, expenseId: string) => {
+    e.stopPropagation();
+    setSelectedExpenseId(prev => prev === expenseId ? null : expenseId);
+  }, []);
+
+  // In the click-outside handler, check data attribute:
+  const clickedOnIcon = (e.target as Element).closest('[data-menu-icon]');
+
+  handleSubmit calls event.preventDefault() at the wrong place (RegisterUserPage.tsx:82-125)
+
+  The form guard event.preventDefault() is called at the bottom of the function on line 124, after new FormData(event.currentTarget) 
+  has already been called. If validation fails (nameError || emailError || passwordError), line 84 calls event.preventDefault() —    
+  fine. But if passwords don't match, no preventDefault() is called before the else block, so the form can submit natively. The      
+  correct pattern is to call event.preventDefault() as the very first thing.
+
+  // BEFORE (line 82)
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    if (nameError || emailError || passwordError) {
+      event.preventDefault(); // only called in one branch
+      return;
+    }
+    // ...
+    event.preventDefault(); // called at the bottom as afterthought
+  };
+
+  // AFTER
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault(); // ALWAYS first
+    if (nameError || emailError || passwordError) return;
+    // ...
+  };
+
+  isValid state is a lie (LoginPage.tsx:29, RegisterUserPage.tsx:40)
+
+  isValid is set to true when any single field passes validation. If the user types a valid email and then a bad password, isValid   
+  stays true (set by the email validator). The button's disabled guard catches this via emailError || passwordError, but isValid     
+  itself is meaningless as a "form is complete" signal. It's never tracking all-fields-valid simultaneously.
+
+  ValidateInputs.tsx — all validators share the same setValid setter
+
+  Every validator (ValidateEmail, ValidatePassword, ValidateName) calls setValid(true) on success and setValid(false) on failure.    
+  They overwrite each other. This means the last field to be validated controls isValid for the whole form. If a user fills name     
+  (valid → setValid(true)), then email (invalid → setValid(false)), then fixes email (valid → setValid(true)) — isValid is true even 
+  if name was cleared afterwards. The whole isValid mechanism needs a redesign using a proper useForm pattern or at minimum tracking 
+  each field independently.
+
+  Modal setTimeout leaks (LoginPage.tsx:70-72, RegisterUserPage.tsx:76-78)
+
+  // Current — timeout fires even after component unmounts
+  setTimeout(function() {
+    setModal(false);
+  }, 2000);
+
+  This runs every time error, isError, or message changes — not just on first trigger. More critically, there's no cleanup. If the   
+  component unmounts before 2 seconds, you get a setState on an unmounted component (React 18 suppresses the warning but the closure 
+  still holds the setter). Use useEffect with cleanup:
+
+  useEffect(() => {
+    if (!modal) return;
+    const id = setTimeout(() => setModal(false), 2000);
+    return () => clearTimeout(id);
+  }, [modal]);
+
+  getExpiryTime() called inside useTimer initializer (OtpVerificationPage.tsx:47)
+
+  getExpiryTime() has a side effect — it writes to localStorage. It's being called during render as part of the useTimer
+  initialization object literal. On strict mode double-render this runs twice, creating two different expiry times in storage.       
+  Extract it outside:
+
+  const [expiryTime] = useState(getExpiryTime); // pass as initializer fn, not call
+
+  Hardcoded console.warn with internal URLs in production (OtpVerificationPage.tsx:74-75)
+
+  console.warn("Requesting OTP for email:", userEmail);
+  console.warn("Resend URL:", resendUrl); // exposes backend URL
+
+  These must be removed. There's no logger abstraction at all — just delete them.
+
+  new File([], expense.receiptUrl) anti-pattern (AddExpense.tsx:262)
+
+  A dummy File object is created with an empty blob just to carry a URL string in a File type field. This is a type system workaround
+   that actively harms the code — file.size === 0 so the size check on line 304 (form.receipt.size > 0) will always be false for     
+  existing receipts, meaning the URL never gets re-uploaded on edit. That's the right behavior but achieved through a misleading     
+  hack. Use a discriminated union instead:
+
+  type ReceiptState =
+    | { kind: 'none' }
+    | { kind: 'existing'; url: string }
+    | { kind: 'new'; file: File; preview: string };
+
+  ---
+  Medium issues
+
+  SideBar.tsx — NavLinks are plain divs, not links (SideBar.tsx:20-29)
+
+  The sidebar items are <div> elements that look like nav items but are not navigable. There are no <NavLink> or <a> elements.       
+  Clicking Personal/Group/Settings does nothing. You're using NavLink in BottomNav.tsx correctly — the sidebar is just broken.       
+
+  BottomNav.tsx — two items point to /receipt (BottomNav.tsx:14-24)
+
+  The "Receipt" and "Group" NavLinks both navigate to /receipt. The Group icon navigates nowhere meaningful. Also, /receipt has no   
+  route defined in AppRoutes.tsx.
+
+  Dead CategorySlice — categories are fetched via RTK Query's useGetCategoriesQuery. The CategorySlice.tsx appears to be unused.     
+  Confirm and delete it.
+
+  Duplicate type files — src/Types/category.ts and src/Types/CategoryType.ts both export a CategoryType interface. Pick one, delete  
+  the other.
+
+  DashBoardCards.tsx:49-68 — fake trend data
+
+  percentageChange: '5', percentageChange: '10', etc. are hardcoded. These values don't come from the analytics API. If the analytics
+   API doesn't return trend data, hide the TrendBadge entirely. Showing fake percentages to users is a UX/trust problem, not just a  
+  tech debt.
+
+  ---
+  3. Performance
+
+  expenseList.map() in ExpenseList.tsx renders the mobile card list AND the desktop table — both always rendered, hidden via CSS     
+  (block sm:hidden / hidden sm:block). On a page with 100 expenses, you're rendering every expense twice. Use a proper useMediaQuery 
+  hook and render only one list:
+
+  const isMobile = useMediaQuery('(max-width: 640px)');
+  return isMobile ? <MobileExpenseList ... /> : <DesktopExpenseTable ... />;
+
+  today computed on module load (PersonalExpenseDashboard.tsx:43)
+
+  const today = new Date().toISOString().split('T')[0]; // module-level constant
+
+  This is computed once when the module is first imported. If the app stays open past midnight, today is stale. Move it into the     
+  component body or use a useMemo with a date-change watcher.
+
+  AddExpense.tsx — URL.createObjectURL leaks
+
+  URL.createObjectURL(file) on line 243 creates an object URL that's never revoked. On every receipt file change the old URL leaks.  
+  Add a cleanup effect:
+
+  useEffect(() => {
+    return () => {
+      if (form.receiptPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(form.receiptPreview);
+      }
+    };
+  }, [form.receiptPreview]);
+
+  validateForm duplicates isValid logic (AddExpense.tsx:182-199, 218-224)
+
+  There are two separate validity computations: validateForm() and the isValid boolean derived inline. They can get out of sync      
+  (e.g., validateForm checks hasReceipt && !receipt but isValid doesn't). One source of truth:
+
+  const formErrors = useMemo(() => validateForm(form), [form]);
+  const isValid = Object.keys(formErrors).length === 0;
+
+  ---
+  4. Responsiveness & Layout
+
+  ExpenseList.tsx:84 — w-[25%] on the AddExpense wrapper
+
+  <div className='flex-1 w-[25%]'>
+    <AddExpense ... />
+  </div>
+
+  AddExpense is a fixed-position modal (fixed inset-0). Putting it inside a w-[25%] div is meaningless — fixed elements are taken out
+   of flow. Remove the wrapper entirely.
+
+  OtpVerificationPage.tsx:147 — broken clamp
+
+  sx={{ fontSize: 'clamp(1rem, 5vw, 0.75rem)' }}
+
+  The min value (1rem) is larger than the max value (0.75rem). clamp(min, preferred, max) requires min ≤ max. This always resolves to
+   1rem on most displays. It should be clamp(0.75rem, 2vw, 1rem).
+
+  Dashboard layout — PersonalExpenseDashboard wraps cards in max-w-5xl but the expense table section has max-w-6xl. This creates a   
+  slight width inconsistency. Pick one max-width for the whole page container and apply it at the page level.
+
+  BottomNav overlaps content — The bottom nav is h-16 fixed at the bottom, but no bottom padding is applied to the page content. On  
+  mobile, the last visible row of the expense table will be hidden behind the nav bar.
+
+  ---
+  5. UI/UX Evaluation
+
+  The search bar does nothing. (ExpenseList.tsx:93-101)
+
+  There's a search input with a placeholder "Search Expense" and a label for accessibility, but no onChange, no filtering logic, no  
+  state connected to it. It's completely non-functional UI. Either implement it or remove it — showing users a search box that does  
+  nothing destroys trust.
+
+  OTP expired → submit button repurposed as "request new OTP" (OtpVerificationPage.tsx:100-105)
+
+  When isTimerExpired, clicking "Submit" calls requestOtp() instead of submitting. The button still says "Submit". This is
+  disorienting. The UI should show the expired state clearly and have a dedicated "Resend OTP" button rather than hijacking the      
+  submit action.
+
+  Modal feedback is orange regardless of error type (Modal.tsx:7)
+
+  bg-[#F2994A] (orange) is used for all notifications — errors, success ("OTP sent to your email"), and auth failures. Orange reads  
+  as a warning. Use green for success, red for errors.
+
+  <Link href="/register"> instead of <Link to="/register"> (LoginPage.tsx:180)
+
+  MUI's Link with href does a full page reload. In a SPA this breaks state and is slower. Use React Router's Link component or pass  
+  component={RouterLink} to MUI Link. Same issue in RegisterUserPage.tsx:234.
+
+  No loading state on OTP resend (OtpVerificationPage.tsx:68-98)
+
+  The requestOtp function fires an axios request with no loading indicator. The user can click "Here" multiple times and spam the    
+  endpoint. Add a loading state and disable the link during the request.
+
+  Delete expense has no confirmation (ExpenseList.tsx:167)
+
+  onClick={() => void deleteExpenseMutation(expense.expenseId ?? '')}
+
+  A single click permanently deletes an expense with no confirmation dialog. This is a destructive action that users will
+  accidentally trigger. Add a confirmation step.
+
+  ---
+  6. Typography
+
+  Three font families in play with no clear hierarchy:
+  - IBM Plex Sans — hardcoded in Otp.tsx:188 (styled component, not from Tailwind config)
+  - Inter — defined in tailwind.config.js
+  - Poppins — defined in tailwind.config.js, used with font-poppins class in ExpenseList.tsx:102
+  - MUI components use its own default Roboto
+
+  You have four fonts loading. None of this is coordinated. The Tailwind config defines the fonts but they're not enforced as a base 
+  style in index.css. MUI uses Roboto unless configured to use Inter. Pick one font family, set it globally via both the Tailwind    
+  fontFamily.sans override and MUI's createTheme({ typography: { fontFamily: '...' } }).
+
+  clamp font sizing is inconsistently applied — some MUI Typography components use clamp, others use fixed variant sizes. This makes 
+  text scaling unpredictable across viewports.
+
+  Dashboard body text is consistently text-sm / text-xs — the information density is high, but there's no clear typographic scale.   
+  Card titles, amounts, labels, and descriptions all sit within a 11px–24px range with no systematic hierarchy defined in config.    
+
+  ---
+  7. Color System
+
+  Two completely separate color systems:
+
+  The auth pages use MUI's default theme (blues, grays, white background). The dashboard uses a dark custom palette (#121215,        
+  #17171c, #1f1f24, #2a2a30, teal #009689). These are never connected.
+
+  All dark theme colors are hardcoded magic strings:
+  #121215  #17171c  #1f1f24  #2a2a30  #3d3d45  #005a52
+
+  These appear scattered across multiple files. If you ever want to adjust the base dark color, you'd need to grep-replace across the
+   codebase. Move these to tailwind.config.js:
+
+  theme: {
+    extend: {
+      colors: {
+        surface: {
+          base: '#121215',
+          card: '#17171c',
+          hover: '#1f1f24',
+          elevated: '#2a2a30',
+        },
+        brand: {
+          DEFAULT: '#009689',
+          dark: '#005a52',
+        },
+      },
+    },
+  },
+
+  WCAG contrast failures:
+  - text-zinc-500 on bg-[#17171c] — #71717a on #17171c gives approximately 4.5:1. Passes AA for normal text, fails for small text.   
+  - text-zinc-600 (#52525b) on #17171c — approximately 3.2:1. Fails AA entirely. This is used for expense.description
+  (ExpenseList.tsx:149) — secondary information that's actually unreadable.
+  - The orange modal bg-[#F2994A] with text-white — orange/white combinations are notoriously low contrast. At this saturation it's  
+  approximately 2.8:1. Fails AA.
+
+  The teal brand color is inconsistent: #009689 (Tailwind class bg-[#009689]) and Tailwind's teal-600 (#0d9488) are both used and are
+   visually different. The category selection active state uses teal-600/teal-400 from Tailwind while the Add button uses #009689.   
+  Pick one.
+
+  ---
+  8. Spacing & Visual Consistency
+
+  ExpenseList.tsx table vs mobile card layout have different padding standards:
+  - Table cells: px-6 py-4 / px-6 py-3
+  - Mobile cards: px-4 py-3
+
+  Neither is wrong, but the inconsistency between layouts for the same data means the product feels like two different apps on mobile
+   vs desktop.
+
+  AddExpense.tsx has a gap-4 grid that switches to gap-2 inside the category grid — fine, but the category buttons use px-2 py-2     
+  while the notes textarea and other inputs use px-3 py-2. The inconsistency is subtle but visible when looking at alignment.        
+
+  DashBoardCards.tsx uses p-3 sm:p-5 while the rest of the dashboard uses a fixed 4px-based scale. The p-3 (12px) → p-5 (20px) jump  
+  is non-standard. Consider p-4 sm:p-6.
+
+  ---
+  9. Accessibility (A11y)
+
+  SideBar.tsx — keyboard users cannot navigate the sidebar. All menu items are <div> elements. No tabindex, no role="navigation", no 
+  role="menuitem". A keyboard-only user cannot navigate the app at all from desktop.
+
+  Modal.tsx — no focus trap, no ARIA role.
+
+  <motion.div className="absolute top-0 right-0 ...">
+
+  There's no role="alert" or role="dialog", no aria-live, no focus management. Screen readers won't announce this notification. It   
+  should be role="alert" for error messages or role="status" for success.
+
+  ReceiptUploader.tsx:119 — onClick on a non-interactive <div>
+
+  <div ... onClick={() => document.getElementById("receipt-upload")?.click()}>
+
+  A <div> with a click handler is invisible to keyboard and screen reader users. Wrap with <button> or add role="button" tabIndex={0}
+   with a onKeyDown handler for Enter/Space.
+
+  ExpenseList.tsx:102-108 — Add Expense button has nested interactive elements
+
+  <div onClick={() => changeModal()} className="...">
+    <AddIcon/>
+    <button className='p-1.5'>...</button>
+  </div>
+
+  A <button> inside a clickable <div> is invalid HTML. The outer div handles the click, the inner button is redundant. Use a single  
+  <button> element:
+
+  <button onClick={changeModal} className="p-1 bg-[#009689] rounded-lg ...">
+    <AddIcon /> Add Expense
+  </button>
+
+  Otp.tsx — individual digit inputs lack a group label. Each input has aria-label="Digit N of OTP" which is good, but there's no     
+  wrapping <fieldset>/<legend> or role="group" aria-labelledby to tell screen readers this is an OTP entry field as a whole.
+
+  ExpenseList.tsx table is missing <caption> — screen readers announce tables better when there's a <caption> or aria-label on the   
+  <table>.
+
+  ---
+  10. Tailwind CSS Usage
+
+  Tailwind config is almost empty (tailwind.config.js)
+
+  Only two font families defined. All brand colors, dark theme colors, and semantic tokens are raw hex strings in JSX. This makes    
+  refactoring and theming impossible without grep-replace. The config should be the single source of truth.
+
+  Excessive arbitrary values: The codebase is littered with bg-[#17171c], text-[#009689], border-[#121215], hover:bg-[#1f1f24], etc. 
+  These appear in at least 8 different files. Arbitrary values are acceptable for one-offs; at this scale they're a maintenance      
+  problem.
+
+  Mixing Tailwind with MUI sx prop creates two mental models for the same task. This is unavoidable when using both libraries, but   
+  the seam is rough. Auth pages are pure MUI sx, dashboard is mostly Tailwind — which means if you ever want to restyle the auth     
+  pages to match the dashboard's dark theme, you'd rewrite them from scratch.
+
+  ExpenseList.tsx inline style mixed with Tailwind (AddExpense.tsx:423-425)
+
+  style={{
+    backgroundColor: c.categoryColor + "30",
+    ...(form.categoryId === c.categoryId ? { boxShadow: "0 0 0 2px #14b8a6" } : {}),
+  }}
+
+  The category color + "30" hex opacity trick is fragile — it only works for 6-digit hex colors, not 3-digit, rgb, or named colors.  
+  Use color-mix() or pass the opacity through a CSS custom property.
+
+  ---
+  11. Scalability & Architecture
+
+  No error boundary anywhere. If ExpenseList, ExpenseCharts, or DashBoardCards throw a runtime error, the entire app goes blank. Add 
+  at minimum one top-level error boundary around the dashboard route.
+
+  No centralized API error handling. Each component handles errors differently — some dispatch to Redux message, some set local      
+  state, one uses console.warn. Define a consistent pattern: RTK Query errors → toast/notification system, auth errors → Redux state,
+   form validation → local state.
+
+  styles/card.tsx and styles/SignUpContainer.tsx are styled MUI components that are lazy-loaded — lazy loading pure style components 
+  (no logic, ~20 lines each) adds a network roundtrip for zero benefit. Import them eagerly.
+
+  File organization has a naming inconsistency:
+  - Component/ (capital C)
+  - Pages/ (capital P)
+  - routes/ (lowercase r)
+  - Types/ (capital T)
+  - styles/ (lowercase s)
+
+  Pick a convention (PascalCase for directories containing components, camelCase for others) and be consistent.
+
+  Types/ folder has five files with overlapping concerns:
+  - auth.ts — auth types
+  - category.ts — CategoryType
+  - CategoryType.ts — also CategoryType (duplicate)
+  - AnalyticsType.tsx — analytics (why .tsx for a pure type file?)
+  - PersonalExpenseListType.tsx — expense types (again .tsx for types only)
+
+  Type-only files should be .ts, not .tsx. .tsx signals JSX is present.
+
+  ---
+  12. Prioritized Improvements
+
+  High Impact (fix now)
+
+  ┌─────┬─────────────────────────────────────────────────────────────┬──────────────────────────────────────────┬───────────────┐   
+  │  #  │                            Issue                            │                   File                   │    Impact     │   
+  ├─────┼─────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼───────────────┤   
+  │ 1   │ iconRef shared across all rows — broken                     │ ExpenseList.tsx:40                       │ Bug           │   
+  │     │ close-on-outside-click                                      │                                          │               │   
+  ├─────┼─────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼───────────────┤   
+  │ 2   │ event.preventDefault() called after FormData in Register    │ RegisterUserPage.tsx:82                  │ Bug           │   
+  ├─────┼─────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼───────────────┤   
+  │ 3   │ isValid state tracks whichever field validated last, not    │ ValidateInputs.tsx, both auth pages      │ Bug           │   
+  │     │ all fields                                                  │                                          │               │   
+  ├─────┼─────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼───────────────┤   
+  │ 4   │ setTimeout modal close has no cleanup — leaks on unmount    │ LoginPage.tsx:70,                        │ Memory leak   │   
+  │     │                                                             │ RegisterUserPage.tsx:76                  │               │   
+  ├─────┼─────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼───────────────┤   
+  │ 5   │ console.warn exposes backend URL in production              │ OtpVerificationPage.tsx:74-75            │ Security      │   
+  ├─────┼─────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼───────────────┤   
+  │ 6   │ Search bar is non-functional but visible                    │ ExpenseList.tsx:93                       │ Trust / UX    │   
+  ├─────┼─────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼───────────────┤   
+  │ 7   │ Delete expense has no confirmation                          │ ExpenseList.tsx:167                      │ Data loss     │   
+  ├─────┼─────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼───────────────┤   
+  │ 8   │ SideBar.tsx items are non-navigable <div> elements          │ SideBar.tsx:20                           │ Broken        │   
+  │     │                                                             │                                          │ feature       │   
+  ├─────┼─────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼───────────────┤   
+  │ 9   │ <Link href> causes full page reload                         │ LoginPage.tsx:180,                       │ UX            │   
+  │     │                                                             │ RegisterUserPage.tsx:234                 │               │   
+  ├─────┼─────────────────────────────────────────────────────────────┼──────────────────────────────────────────┼───────────────┤   
+  │ 10  │ Both mobile and desktop lists always rendered (double       │ ExpenseList.tsx                          │ Performance   │   
+  │     │ render)                                                     │                                          │               │   
+  └─────┴─────────────────────────────────────────────────────────────┴──────────────────────────────────────────┴───────────────┘   
+
+  Medium Impact
+
+  ┌─────┬─────────────────────────────────────────────────────────────┬─────────────────────────────────┐
+  │  #  │                            Issue                            │              File               │
+  ├─────┼─────────────────────────────────────────────────────────────┼─────────────────────────────────┤
+  │ 11  │ URL.createObjectURL never revoked — memory leak             │ AddExpense.tsx:243              │
+  ├─────┼─────────────────────────────────────────────────────────────┼─────────────────────────────────┤
+  │ 12  │ new File([], url) anti-pattern for existing receipts        │ AddExpense.tsx:262              │
+  ├─────┼─────────────────────────────────────────────────────────────┼─────────────────────────────────┤
+  │ 13  │ today computed at module load — stale after midnight        │ PersonalExpenseDashboard.tsx:43 │
+  ├─────┼─────────────────────────────────────────────────────────────┼─────────────────────────────────┤
+  │ 14  │ OTP expired repurposes Submit button — confusing UX         │ OtpVerificationPage.tsx:100     │
+  ├─────┼─────────────────────────────────────────────────────────────┼─────────────────────────────────┤
+  │ 15  │ Fake hardcoded trend percentages shown to users             │ DashBoardCards.tsx:53-55        │
+  ├─────┼─────────────────────────────────────────────────────────────┼─────────────────────────────────┤
+  │ 16  │ BottomNav "Group" link navigates to /receipt                │ BottomNav.tsx:20                │
+  ├─────┼─────────────────────────────────────────────────────────────┼─────────────────────────────────┤
+  │ 17  │ No focus trap or ARIA on Modal                              │ Modal.tsx                       │
+  ├─────┼─────────────────────────────────────────────────────────────┼─────────────────────────────────┤
+  │ 18  │ Orange modal used for both error and success                │ Modal.tsx:7                     │
+  ├─────┼─────────────────────────────────────────────────────────────┼─────────────────────────────────┤
+  │ 19  │ BottomNav overlaps page content (no bottom padding on page) │ PersonalExpensePage.tsx         │
+  ├─────┼─────────────────────────────────────────────────────────────┼─────────────────────────────────┤
+  │ 20  │ clamp(1rem, 5vw, 0.75rem) — min > max                       │ OtpVerificationPage.tsx:147     │
+  └─────┴─────────────────────────────────────────────────────────────┴─────────────────────────────────┘
+
+  Nice to Have
+
+  ┌─────┬───────────────────────────────────────────────────────────────────────┐
+  │  #  │                                 Issue                                 │
+  ├─────┼───────────────────────────────────────────────────────────────────────┤
+  │ 21  │ Extract all hardcoded hex colors to tailwind.config.js                │
+  ├─────┼───────────────────────────────────────────────────────────────────────┤
+  │ 22  │ Consolidate 4 font families to 1                                      │
+  ├─────┼───────────────────────────────────────────────────────────────────────┤
+  │ 23  │ Delete duplicate CategoryType.ts vs category.ts                       │
+  ├─────┼───────────────────────────────────────────────────────────────────────┤
+  │ 24  │ Delete unused CategorySlice                                           │
+  ├─────┼───────────────────────────────────────────────────────────────────────┤
+  │ 25  │ Rename type files from .tsx to .ts                                    │
+  ├─────┼───────────────────────────────────────────────────────────────────────┤
+  │ 26  │ Normalize directory naming convention                                 │
+  ├─────┼───────────────────────────────────────────────────────────────────────┤
+  │ 27  │ Add React Error Boundary around dashboard                             │
+  ├─────┼───────────────────────────────────────────────────────────────────────┤
+  │ 28  │ Don't lazy-load pure style components (card.tsx, SignUpContainer.tsx) │
+  ├─────┼───────────────────────────────────────────────────────────────────────┤
+  │ 29  │ Add <caption> to expense table                                        │
+  ├─────┼───────────────────────────────────────────────────────────────────────┤
+  │ 30  │ Add vitest test coverage (currently zero tests)                       │
+  └─────┴───────────────────────────────────────────────────────────────────────┘
+
+  ---
+  13. Refactoring Examples
+
+  Fix: Modal with proper lifecycle
+
+  // BEFORE (LoginPage.tsx:61-73) — leaks, fires on every dep change
+  useEffect(() => {
+    if (error) {
+      setModal(true);
+      setoauthError(error);
+    } else if (isError && message) {
+      setModal(true);
+      setoauthError(message);
+    }
+    setTimeout(function () {
+      setModal(false);
+    }, 2000);
+  }, [error, isError, message]);
+
+  // AFTER — modal state drives the auto-close, not the error source
+  useEffect(() => {
+    const msg = error ?? (isError ? message : null);
+    if (msg) {
+      setoauthError(msg);
+      setModal(true);
+    }
+  }, [error, isError, message]);
+
+  useEffect(() => {
+    if (!modal) return;
+    const id = setTimeout(() => setModal(false), 2000);
+    return () => clearTimeout(id);
+  }, [modal]);
+
+  Fix: Validation with a real all-fields-valid signal
+
+  // BEFORE — shared setValid stomped by last validator to run
+  const [isValid, setValid] = React.useState(false);
+  // ... passed to ValidateEmail, ValidatePassword, ValidateName
+
+  // AFTER — derive validity from error state, no shared flag needed
+  const isSubmittable = !nameError && !emailError && !passwordError
+    && firstName.trim() !== '' && email.trim() !== '' && password !== '';
+
+  <Button disabled={!isSubmittable || isLoading}>Sign up</Button>
+
+  Fix: SideBar with actual navigation
+
+  // BEFORE (SideBar.tsx:20-29) — divs that do nothing
+  <div key={index} className="flex items-center ...">
+    <div className="mr-4">{item.icon}</div>
+    <div>{item.name}</div>
+  </div>
+
+  // AFTER — NavLink with active style
+  import { NavLink } from 'react-router';
+
+  <NavLink
+    key={item.Link}
+    to={item.Link}
+    className={({ isActive }) =>
+      `flex items-center px-6 py-2 my-1 rounded-lg text-lg transition-colors
+       ${isActive
+         ? 'bg-zinc-800 text-teal-400'
+         : 'text-zinc-100 hover:bg-zinc-800'}`
+    }
+  >
+    <span className="mr-4 text-[#563787]">{item.icon}</span>
+    <span className="font-bold tracking-wider">{item.name}</span>
+  </NavLink>
+
+  Fix: Replace new File([], url) with a discriminated union
+
+  // BEFORE (PersonalExpenseListType.tsx / AddExpense.tsx)
+  receipt: File | null;  // used for both new uploads AND existing URLs
+
+  // AFTER
+  type ReceiptState =
+    | { kind: 'none' }
+    | { kind: 'existing'; url: string; receiptId: number }
+    | { kind: 'new'; file: File; preview: string };
+
+  // In FormState:
+  interface FormState {
+    // ...
+    receipt: ReceiptState;
+  }
+
+  // In submit():
+  if (form.receipt.kind === 'new') {
+    payload.fileName = form.receipt.file.name;
+    payload.file = form.receipt.file;
+  }
+  if (form.receipt.kind === 'none' && isEdit && had receipt before) {
+    payload.deleteReceipt = true;
+  }
+
+  ---
+  Summary of the honest verdict: The architecture is solid — RTK Query, code splitting, and the separation of auth/dashboard concerns
+   are all good decisions. The bugs are mostly in the auth forms and UI details, not in the core data layer. The biggest single      
+  investment you should make is fixing the color system in tailwind.config.js and the validation logic, because those two things     
+  touch every page and every user interaction.
+
+✻ Churned for 2m 57s
+
+※ recap: Deep frontend code review complete. Next step: start fixing the high-impact bugs — beginning with the shared `iconRef`      
+  across table rows in `ExpenseList.tsx`.

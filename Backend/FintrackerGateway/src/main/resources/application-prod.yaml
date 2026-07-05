@@ -1,0 +1,45 @@
+logging:
+  level:
+    root: warn
+    org:
+      vrajpatel:
+        fintrackergateway: warn
+
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowed-origins:
+                  - ${ALLOWED_ORIGINS}
+                allowed-methods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowed-headers:
+                  - '*'
+                exposed-headers:
+                  - Authorization
+                  - Set-Cookie
+                max-age: 3600
+                allow-credentials: true
+resilience4j:
+  circuitbreaker:
+    instances:
+      userServiceBreaker:
+        register-health-indicator: true
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 100          # Tracks last 100 requests for stable statistics
+        minimum-number-of-calls: 20       # Requires at least 20 calls before calculating rate
+        failure-rate-threshold: 50         # Standard threshold; half of requests failing is a true outage
+        slow-call-rate-threshold: 75       # Protects system from hanging/sluggish downstream APIs
+        slow-call-duration-threshold: 3s   # Calls taking over 3s are flagged as slow
+        wait-duration-in-open-state: 30s   # Gives downstream service 30 seconds to recover/reboot
+        permitted-number-of-calls-in-half-open-state: 10 # Safer sample size to evaluate health
+        automatic-transition-from-open-to-half-open-enabled: true
+

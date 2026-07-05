@@ -1,0 +1,18 @@
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "userauthservice"
+  namespace: fintracker
+  labels:
+    env: "prod"
+    type: "userauthentication"
+spec:
+  type: "ClusterIP"
+  ports:
+    - protocol: "TCP"
+      port: 8080
+      targetPort: 8080
+  selector:
+    type: "userauthenticationpod"
+
+

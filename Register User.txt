@@ -1,0 +1,40 @@
+title Fintracker - Registration
+
+participant User
+participant frontend
+participant gateway
+participant authController
+participant authService
+participant otpGenerator
+participant emailService
+participant database
+
+User -> frontend : Fill form and hit register
+frontend -> authController : POST /userauth/api/auth/register
+authController -> authService : check if user exists
+authService -> database : SELECT * FROM users WHERE email = ?
+database --> frontend : user not found
+authService -> database : save user
+authService -> otpGenerator : generate and store OTP
+otpGenerator -> emailService : send OTP to user
+otpGenerator --> authController : Email not verified
+authController --> frontend : show OTP entry UI
+
+User -> frontend : enter OTP
+frontend -> authController : POST /userauth/api/auth/verifyOtp
+authController -> authService : validate OTP
+authService -> database : check OTP
+database --> authService : OTP valid
+alt OTP valid
+  authService -> frontend : send Access & Refresh Token
+else OTP invalid
+  authService --> frontend : Invalid OTP
+end
+
+
+
+
+
+
+
+

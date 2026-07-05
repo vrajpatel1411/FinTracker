@@ -1,0 +1,46 @@
+title Fintracker - Login
+
+participant User
+participant frontend
+participant gateway
+participant authController
+participant authService
+participant otpGenerator
+participant emailService
+participant database
+
+User -> frontend : Fill form and hit Login
+frontend -> authController : POST /userauth/api/auth/login
+authController -> authService : validate user credentials
+authService -> database : SELECT * FROM users WHERE email = ? LIMIT 1
+database --> authService : Return user record
+
+alt User does not exist
+    authService -> authController : User not found
+    authController -> frontend : Respond with "User does not exist"
+else Email not verified
+    authService -> otpGenerator : Generate and store OTP
+    otpGenerator -> emailService : Send OTP to user email
+    otpGenerator --> authService : OTP sent
+    authService -> authController : Email not verified
+    authController -> frontend : Show OTP entry UI
+else Email verified
+    authService -> authController : Credentials valid
+    authController -> frontend : Send Access & Refresh Token
+end
+
+== OTP Verification ==
+
+User -> frontend : Enter received OTP
+frontend -> authController : POST /userauth/api/auth/verifyOtp
+authController -> authService : validate OTP
+authService -> database : SELECT * FROM otp_store WHERE email = ?
+database --> authService : Return stored OTP
+
+alt OTP valid
+    authService -> authController : Verification successful
+    authController -> frontend : Send Access & Refresh Token
+else OTP invalid
+    authService -> authController : Invalid OTP
+    authController -> frontend : Respond with "Invalid OTP"
+end

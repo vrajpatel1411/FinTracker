@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fintrackerfrontenddeployment
+  namespace: fintracker
+  labels:
+    env: prod
+    type: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      type: frontendpod
+  template:
+    metadata:
+      labels:
+        type: frontendpod
+    spec:
+      containers:
+        - name: frontendpod
+          image: us-central1-docker.pkg.dev/fintracker-466022/fintracker/frontend/fintrackerfrontend:latest
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 20
